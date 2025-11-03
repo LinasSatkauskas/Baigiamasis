@@ -31,27 +31,25 @@ namespace ReactWithASP.Server
             builder.Services.AddSwaggerGen();
 
             // --- Register custom application services ---
+            // Plants
+            builder.Services.AddScoped<IGetPlantService, GetPlantService>();
+            builder.Services.AddScoped<ISavePlantService, SavePlantService>();
+            builder.Services.AddScoped<IDeletePlantService, DeletePlantService>();
 
-            // Students
-            builder.Services.AddScoped<IGetStudentService, GetStudentService>();
-            builder.Services.AddScoped<ISaveStudentService, SaveStudentService>();
-            builder.Services.AddScoped<IDeleteStudentService, DeleteStudentService>();
-            // Groups
-            builder.Services.AddScoped<IGetGroupService, GetGroupService>();
-            builder.Services.AddScoped<ISaveGroupService, SaveGroupService>();
-            builder.Services.AddScoped<IDeleteGroupService, DeleteGroupService>();
+            // Pests
+            builder.Services.AddScoped<IGetPestService, GetPestService>();
+            builder.Services.AddScoped<ISavePestService, SavePestService>();
+            builder.Services.AddScoped<IDeletePestService, DeletePestService>();
 
-            builder.Services.AddScoped<IGetLecturerService, GetLecturerService>();
-            builder.Services.AddScoped<ISaveLecturerService, SaveLecturerService>();
-            builder.Services.AddScoped<IDeleteLecturerService, DeleteLecturerService>();
+            // Comments
+            builder.Services.AddScoped<IGetCommentService, GetCommentService>();
+            builder.Services.AddScoped<ISaveCommentService, SaveCommentService>();
+            builder.Services.AddScoped<IDeleteCommentService, DeleteCommentService>();
 
-            builder.Services.AddScoped<IGetProgrammeService, GetProgrammeService>();
-            builder.Services.AddScoped<IManageProgrammeService, ManageProgrammeService>();
-
-            // Subjects
-            builder.Services.AddScoped<IGetSubjectService, GetSubjectService>();
-            builder.Services.AddScoped<ISaveSubjectService, SaveSubjectService>();
-            builder.Services.AddScoped<IDeleteSubjectService, DeleteSubjectService>();
+            // Soils
+            builder.Services.AddScoped<IGetSoilService, GetSoilService>();
+            builder.Services.AddScoped<ISaveSoilService, SaveSoilService>();
+            builder.Services.AddScoped<IDeleteSoilService, DeleteSoilService>();
 
             var app = builder.Build();
 
@@ -71,13 +69,19 @@ namespace ReactWithASP.Server
             // Map controllers
             app.MapControllers();
 
-            // Fallback for SPA
-            app.MapFallbackToFile("/index.html");
-
+            // Start the web host
             app.Run();
         }
     }
 }
+
+
+
+
+
+
+
+
 
 
 

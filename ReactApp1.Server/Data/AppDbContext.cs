@@ -5,28 +5,50 @@ using ReactApp1.Server.Models.Entities;
 
 namespace ReactApp1.Server.Data
 {
-    public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext(options)
+    public class AppDbContext : IdentityDbContext
     {
-        public DbSet<Student> Students { get; set; }
-        public DbSet<Lecturer> Lecturers { get; set; }
-        public DbSet<Subject> Subjects { get; set; }
-        public DbSet<Group> Groups { get; set; }
-        public DbSet<Programme> Programmes { get; set; }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder builder)
+        public DbSet<Plant> Plants { get; set; }
+        public DbSet<Pest> Pests { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<Soil> Soils { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-           builder.ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.NavigationBaseIncludeIgnored, CoreEventId.NavigationBaseIncluded));
+            optionsBuilder.ConfigureWarnings(w => w.Ignore(CoreEventId.NavigationBaseIncludeIgnored, CoreEventId.NavigationBaseIncluded));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Optional: configure join table name
-            modelBuilder.Entity<Programme>()
-                .HasMany(p => p.Subjects)
-                .WithMany(s => s.Programmes)
-                .UsingEntity(j => j.ToTable("ProgrammeSubjects"));
+            modelBuilder.Entity<Plant>(entity =>
+            {
+                entity.Property(p => p.Name).IsRequired();
+                entity.Property(p => p.Description).IsRequired(false);
+                entity.Property(p => p.SoilType).IsRequired(false);
+                entity.Property(p => p.Pests).IsRequired(false);
+                entity.Property(p => p.PestControlMethod).IsRequired(false);
+                entity.Property(p => p.ImageUrl).IsRequired(false);
+            });
+
+            modelBuilder.Entity<Pest>(entity =>
+            {
+                entity.Property(p => p.Name).IsRequired();
+                entity.Property(p => p.ImageUrl).IsRequired(false);
+            });
+
+            modelBuilder.Entity<Comment>(entity =>
+            {
+                entity.Property(c => c.Email).IsRequired().HasMaxLength(100);
+                entity.Property(c => c.Text).IsRequired().HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<Soil>(entity =>
+            {
+                entity.Property(s => s.Name).IsRequired();
+            });
         }
     }
 }
