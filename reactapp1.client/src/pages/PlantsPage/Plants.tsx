@@ -13,7 +13,7 @@ export default function Plants() {
     const [visibleModal, setVisibleModal] = useState<boolean>(false);
     const [editPlant, setEditPlant] = useState<IPlant | undefined>();
 
- 
+
     const [allPests, setAllPests] = useState<IPest[]>([]);
     const [allSoils, setAllSoils] = useState<ISoil[]>([]);
     const [filterPest, setFilterPest] = useState<string>("");
@@ -21,11 +21,11 @@ export default function Plants() {
     const [showPestFilter, setShowPestFilter] = useState(false);
     const [showSoilFilter, setShowSoilFilter] = useState(false);
 
-  
+
     const pestFilterRef = useRef<HTMLDivElement>(null);
     const soilFilterRef = useRef<HTMLDivElement>(null);
 
-  
+
     useEffect(() => {
         setShowPestFilter(false);
         setShowSoilFilter(false);
@@ -132,7 +132,7 @@ export default function Plants() {
                    Pridėti augalą
                 </button>
 
-                {/* Pest filter (closed by default, toggled by button, click‑outside closes) */}
+              
                 <div className="relative" ref={pestFilterRef}>
                     <button
                         type="button"
@@ -174,7 +174,7 @@ export default function Plants() {
                     )}
                 </div>
 
-                {/* Soil filter (closed by default, toggled by button, click‑outside closes) */}
+         
                 <div className="relative" ref={soilFilterRef}>
                     <button
                         type="button"
@@ -216,7 +216,7 @@ export default function Plants() {
                     )}
                 </div>
 
-                {/* Search input (fixed narrow width via wrapper) */}
+              
                 <div className="flex-none w-40 sm:w-46">
                     <input
                         type="text"
@@ -228,46 +228,105 @@ export default function Plants() {
                 </div>
             </div>
 
-            <table className="min-w-full border border-[#065f46] border-separate border-spacing-0">
-                <thead>
-                    <tr className="bg-gray-100">
-                        <th className="border border-[#065f46] px-4 py-2 text-left">Pavadinimas</th>
-                        <th className="border border-[#065f46] px-4 py-2 text-left">Aprašymas</th>
-                        <th className="border border-[#065f46] px-4 py-2 text-left">Žemės tipas</th>
-                        <th className="border border-[#065f46] px-4 py-2 text-left">Kenkėjai</th>
-                        <th className="border border-[#065f46] px-4 py-2 text-left">Kenkėjų kontrolė</th>
-                        <th className="border border-[#065f46] px-4 py-2"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {visiblePlants.map((plant) => (
-                        <tr key={plant.id} className="border border-[#065f46]">
-                            <td className="border border-[#065f46] px-4 py-2 align-top">
-                                <div className="text-center">{plant.name}</div>
-                                {plant.imageUrl && (
-                                    <img
-                                        src={plant.imageUrl}
-                                        alt={plant.name}
-                                        className="mt-1 w-full h-40 object-contain block"
-                                    />
-                                )}
-                            </td>
-                            <td className="border border-[#065f46] px-4 py-2">{plant.description ?? "-"}</td>
-                            <td className="border border-[#065f46] px-4 py-2">{plant.soilType ?? "-"}</td>
-                            <td className="border border-[#065f46] px-4 py-2">{plant.pests ?? "-"}</td>
-                            <td className="border border-[#065f46] px-4 py-2">{plant.pestControlMethod ?? "-"}</td>
-                            <td className="border border-[#065f46] px-4 py-2">
-                                <button
-                                    className="underline text-blue-600"
-                                    onClick={() => editHandler(plant)}
-                                >
-                                    Redaguoti
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+           
+            <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-lg shadow ring-1 ring-gray-200">
+                    <table className="min-w-full table-auto">
+                        <thead>
+                            <tr className="bg-gray-50">
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Pavadinimas</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Aprašymas</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Žemės tipas</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Kenkėjai</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Kenkėjų kontrolė</th>
+                                <th className="px-4 py-3" />
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 bg-white">
+                            {visiblePlants.map((plant) => (
+                                <tr key={plant.id} className="hover:bg-gray-50">
+                               
+                                    <td className="px-4 py-3 align-top">
+                                        <div className="flex items-start gap-3">
+                                            {plant.imageUrl ? (
+                                                <img
+                                                    src={plant.imageUrl}
+                                                    alt={plant.name}
+                                                    className="h-14 w-14 rounded-md object-cover ring-1 ring-gray-200 bg-gray-50"
+                                                />
+                                            ) : (
+                                                <div className="h-14 w-14 rounded-md ring-1 ring-gray-200 bg-gray-50 flex items-center justify-center text-[10px] text-gray-400">
+                                                    Nėra
+                                                </div>
+                                            )}
+                                            <div>
+                                                <div className="font-medium text-gray-900">{plant.name}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                
+                                    <td className="px-4 py-3 align-top">
+                                        <div className="text-sm text-gray-700">
+                                            {plant.description ?? "-"}
+                                        </div>
+                                    </td>
+
+                                   
+                                    <td className="px-4 py-3 align-top">
+                                        {plant.soilType ? (
+                                            <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                                {plant.soilType}
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm text-gray-400">-</span>
+                                        )}
+                                    </td>
+
+                                   
+                                    <td className="px-4 py-3 align-top">
+                                        {plant.pests ? (
+                                            <div className="flex flex-wrap gap-1">
+                                                {plant.pests
+                                                    .split(",")
+                                                    .map(p => p.trim())
+                                                    .filter(Boolean)
+                                                    .map((p, idx) => (
+                                                        <span
+                                                            key={`${p}-${idx}`}
+                                                            className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+                                                        >
+                                                            {p}
+                                                        </span>
+                                                    ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-gray-400">-</span>
+                                        )}
+                                    </td>
+
+                                    
+                                    <td className="px-4 py-3 align-top">
+                                        <div className="text-sm text-gray-700">
+                                            {plant.pestControlMethod ?? "-"}
+                                        </div>
+                                    </td>
+
+                                   
+                                    <td className="px-4 py-3 align-top text-right">
+                                        <button
+                                            className="text-emerald-700 hover:text-emerald-900 font-medium"
+                                            onClick={() => editHandler(plant)}
+                                        >
+                                            Redaguoti
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <CommentsSection />
         </div>
