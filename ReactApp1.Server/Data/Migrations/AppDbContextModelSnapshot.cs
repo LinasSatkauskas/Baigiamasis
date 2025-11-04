@@ -234,12 +234,17 @@ namespace ReactApp1.Server.Data.Migrations
                     b.Property<bool>("IsApproved")
                         .HasColumnType("bit(1)");
 
+                    b.Property<int>("PlantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PlantId");
 
                     b.ToTable("Comments");
                 });
@@ -251,9 +256,6 @@ namespace ReactApp1.Server.Data.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("longtext");
@@ -365,6 +367,17 @@ namespace ReactApp1.Server.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ReactApp1.Server.Models.Entities.Comment", b =>
+                {
+                    b.HasOne("ReactApp1.Server.Models.Entities.Plant", "Plant")
+                        .WithMany()
+                        .HasForeignKey("PlantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plant");
                 });
 #pragma warning restore 612, 618
         }

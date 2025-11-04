@@ -1,13 +1,24 @@
-﻿import {
+﻿import React, { PropsWithChildren } from "react";
+import {
     createBrowserRouter,
     RouterProvider,
-}
-    from "react-router-dom";
+    Navigate,
+} from "react-router-dom";
 import Home from "./pages/HomePage/Home";
 import { Layout } from "./pages/Layout";
 import Plants from "./pages/PlantsPage/Plants";
-import Pests from "./pages/PestsPage/Pests"; // added
+import Pests from "./pages/PestsPage/Pests";
 import Soils from "./pages/SoilsPage/Soils";
+import { useAuthStore } from "@/store/authStore";
+
+function RequireAdmin({ children }: PropsWithChildren) {
+    const isAdmin = useAuthStore(s => s.isAdmin);
+    const user = useAuthStore(s => s.user);
+
+    // If not logged in or not admin, redirect to home.
+    if (!user || !isAdmin()) return <Navigate to="/" replace />;
+    return <>{children}</>;
+}
 
 export default function App() {
     const router = createBrowserRouter([
@@ -17,8 +28,8 @@ export default function App() {
             children: [
                 { index: true, Component: Home },
                 { path: "plants", Component: Plants },
-                { path: "pests", Component: Pests },
-                { path: "soils", Component: Soils }
+                { path: "pests", element: <RequireAdmin><Pests /></RequireAdmin> },
+                { path: "soils", element: <RequireAdmin><Soils /></RequireAdmin> }
             ]
         },
     ]);

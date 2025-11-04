@@ -4,11 +4,14 @@ import { getApi, postApi, putApi, deleteApi } from "../../api";
 import { Modal } from "../components/Modal";
 import { PestForm } from "./components/PestForm";
 import { formStyle } from "../../styles/formStyle";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Pests() {
     const [pests, setPests] = useState<IPest[]>([]);
     const [visibleModal, setVisibleModal] = useState<boolean>(false);
     const [editPest, setEditPest] = useState<IPest | undefined>();
+
+    const isAdmin = useAuthStore(s => s.isAdmin);
 
     const getPests = () =>
         getApi<IPest[]>("pests").then((p) => p && setPests(p));
@@ -61,12 +64,14 @@ export default function Pests() {
 
             <div className="flex items-center gap-3 mb-4">
                 <div className="text-3xl">Kenkėjai</div>
-                <button
-                    className={formStyle.button}
-                    onClick={addHandler}
-                >
-                    Pridėti kenkėją
-                </button>
+                {isAdmin() && (
+                    <button
+                        className={formStyle.button}
+                        onClick={addHandler}
+                    >
+                        Pridėti kenkėją
+                    </button>
+                )}
             </div>
 
             <table className="min-w-full border border-[#065f46] border-separate border-spacing-0">
@@ -90,12 +95,14 @@ export default function Pests() {
                                 )}
                             </td>
                             <td className="border border-[#065f46] px-4 py-2">
-                                <button
-                                    className="underline text-blue-600"
-                                    onClick={() => editHandler(pest)}
-                                >
-                                    Redaguoti
-                                </button>
+                                {isAdmin() && (
+                                    <button
+                                        className="underline text-blue-600"
+                                        onClick={() => editHandler(pest)}
+                                    >
+                                        Redaguoti
+                                    </button>
+                                )}
                             </td>
                         </tr>
                     ))}

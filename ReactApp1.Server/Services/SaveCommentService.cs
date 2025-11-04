@@ -11,6 +11,8 @@ namespace ReactApp1.Server.Services
 
         public async Task<CommentDto> Save(CommentDto dto)
         {
+            if (dto.PlantId <= 0)
+                throw new ArgumentException("PlantId is required.", nameof(dto.PlantId));
             if (string.IsNullOrWhiteSpace(dto.Email))
                 throw new ArgumentException("Email is required.", nameof(dto.Email));
             if (string.IsNullOrWhiteSpace(dto.Text))
@@ -21,6 +23,7 @@ namespace ReactApp1.Server.Services
             {
                 entity = await _context.Comments.FindAsync(id)
                     ?? throw new Exception("Comment not found");
+                entity.PlantId = dto.PlantId;
                 entity.Email = dto.Email!;
                 entity.Text = dto.Text!;
                 entity.IsApproved = dto.IsApproved;
@@ -30,6 +33,7 @@ namespace ReactApp1.Server.Services
             {
                 entity = new Comment
                 {
+                    PlantId = dto.PlantId,
                     Email = dto.Email!,
                     Text = dto.Text!,
                     IsApproved = dto.IsApproved
@@ -38,7 +42,7 @@ namespace ReactApp1.Server.Services
             }
 
             await _context.SaveChangesAsync();
-            return new CommentDto(entity.Id, entity.Email, entity.Text, entity.IsApproved);
+            return new CommentDto(entity.Id, entity.PlantId, entity.Email, entity.Text, entity.IsApproved);
         }
     }
 }

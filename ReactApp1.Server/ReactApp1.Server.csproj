@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Removed Microsoft.AspNetCore.Authentication.Cookies 2.3.0 (incompatible; cookies are in the shared framework) -->
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
@@ -31,9 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Migrations\" />
-    <Folder Include="Data\Migrations\" />
-    <Folder Include="Data\Repositories\" />
+    <!-- Deduplicated folders -->
     <Folder Include="Data\Repositories\" />
   </ItemGroup>
 

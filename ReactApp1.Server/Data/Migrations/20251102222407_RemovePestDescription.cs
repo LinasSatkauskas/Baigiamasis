@@ -4,19 +4,36 @@
 
 namespace ReactApp1.Server.Data.Migrations
 {
-    /// <inheritdoc />
     public partial class RemovePestDescription : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-
+            // Drop column only if it exists (MySQL/Pomelo)
+            migrationBuilder.Sql(@"
+SET @sql := (SELECT IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'Pests'
+          AND COLUMN_NAME = 'Description'
+    ),
+    'ALTER TABLE `Pests` DROP COLUMN `Description`;',
+    'SELECT 1'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            migrationBuilder.AddColumn<string>(
+                name: "Description",
+                table: "Pests",
+                type: "longtext",
+                nullable: true);
         }
     }
 }

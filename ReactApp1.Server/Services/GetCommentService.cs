@@ -17,6 +17,16 @@ namespace ReactApp1.Server.Services
             return comments.Select(MapDto).ToList();
         }
 
+        public async Task<List<CommentDto>> GetByPlantId(int plantId)
+        {
+            var comments = await context.Comments
+                .Where(c => c.PlantId == plantId)
+                .OrderByDescending(c => c.Id)
+                .ToListAsync();
+
+            return comments.Select(MapDto).ToList();
+        }
+
         public async Task<CommentDto?> GetById(int id)
         {
             var c = await context.Comments.FirstOrDefaultAsync(x => x.Id == id);
@@ -24,6 +34,6 @@ namespace ReactApp1.Server.Services
         }
 
         private static CommentDto MapDto(Comment c)
-            => new(c.Id, c.Email, c.Text, c.IsApproved);
+            => new(c.Id, c.PlantId, c.Email, c.Text, c.IsApproved);
     }
 }

@@ -3,11 +3,14 @@ import { ISoil } from "../../interfaces/ISoil";
 import { getApi, postApi, putApi, deleteApi } from "../../api";
 import { Modal } from "../components/Modal";
 import { SoilForm } from "./components/SoilForm";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Soils() {
     const [soils, setSoils] = useState<ISoil[]>([]);
     const [visibleModal, setVisibleModal] = useState<boolean>(false);
     const [editSoil, setEditSoil] = useState<ISoil | undefined>();
+
+    const isAdmin = useAuthStore(s => s.isAdmin);
 
     const getSoils = () =>
         getApi<ISoil[]>("soils").then((s) => s && setSoils(s));
@@ -60,12 +63,14 @@ export default function Soils() {
 
             <div className="flex items-center gap-3 mb-4">
                 <div className="text-3xl">Dirvožemiai</div>
-                <button
-                    className="bg-green-600 text-white px-4 py-2 rounded"
-                    onClick={addHandler}
-                >
-                    Pridėti dirvožemį
-                </button>
+                {isAdmin() && (
+                    <button
+                        className="bg-green-600 text-white px-4 py-2 rounded"
+                        onClick={addHandler}
+                    >
+                        Pridėti dirvožemį
+                    </button>
+                )}
             </div>
 
             <table className="min-w-full border border-green-800">
@@ -82,12 +87,14 @@ export default function Soils() {
                                 <div>{soil.name}</div>
                             </td>
                             <td className="border border-green-800 px-4 py-2">
-                                <button
-                                    className="underline text-blue-600"
-                                    onClick={() => editHandler(soil)}
-                                >
-                                    Edit
-                                </button>
+                                {isAdmin() && (
+                                    <button
+                                        className="underline text-blue-600"
+                                        onClick={() => editHandler(soil)}
+                                    >
+                                        Redaguoti
+                                    </button>
+                                )}
                             </td>
                         </tr>
                     ))}
