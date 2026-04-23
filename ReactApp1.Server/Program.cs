@@ -51,7 +51,9 @@ namespace ReactWithASP.Server
                 options.Cookie.Name = ".ReactApp1.Auth";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // ensure consistent secure behavior
+                options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                    ? CookieSecurePolicy.SameAsRequest
+                    : CookieSecurePolicy.Always;
                 options.SlidingExpiration = true;
 
                 options.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
@@ -96,6 +98,8 @@ namespace ReactWithASP.Server
 
             using (var scope = app.Services.CreateScope())
             {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
                 IdentitySeeder.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
             }
 
@@ -108,7 +112,10 @@ namespace ReactWithASP.Server
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseAuthentication();
             app.UseAuthorization();

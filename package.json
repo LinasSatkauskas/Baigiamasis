@@ -1,7 +1,13 @@
 {
+  "scripts": {
+    "dev": "concurrently -k -n server,client \"dotnet run --project ReactApp1.Server/ReactApp1.Server.csproj --launch-profile http\" \"npm --prefix reactapp1.client run dev\"",
+    "dev:server": "dotnet run --project ReactApp1.Server/ReactApp1.Server.csproj --launch-profile http",
+    "dev:client": "npm --prefix reactapp1.client run dev"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
-    "@types/react": "^19.1.15"
+    "@types/react": "^19.1.15",
+    "concurrently": "^9.2.1"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

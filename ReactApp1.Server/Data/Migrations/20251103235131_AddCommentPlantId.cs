@@ -10,9 +10,23 @@ namespace ReactApp1.Server.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Description",
-                table: "Pests");
+            migrationBuilder.Sql(@"
+SET @sql := (SELECT IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'Pests'
+          AND COLUMN_NAME = 'Description'
+    ),
+    'ALTER TABLE `Pests` DROP COLUMN `Description`;'
+    ,
+    'SELECT 1'
+));
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+");
 
             migrationBuilder.AddColumn<int>(
                 name: "PlantId",

@@ -11,10 +11,7 @@ namespace ReactApp1.Server.Data.Seed
     {
         public static async Task SeedAsync(IServiceProvider services)
         {
-            // Do NOT run migrations here. Only verify connectivity.
             var db = services.GetRequiredService<AppDbContext>();
-            if (!await db.Database.CanConnectAsync())
-                throw new InvalidOperationException("Database is not reachable. Check connection string and server status.");
 
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = services.GetRequiredService<UserManager<IdentityUser>>();

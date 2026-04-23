@@ -11,23 +11,12 @@ namespace ReactApp1.Server.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Groups");
-
-            migrationBuilder.DropTable(
-                name: "Lecturers");
-
-            migrationBuilder.DropTable(
-                name: "ProgrammeSubjects");
-
-            migrationBuilder.DropTable(
-                name: "Students");
-
-            migrationBuilder.DropTable(
-                name: "Programmes");
-
-            migrationBuilder.DropTable(
-                name: "Subjects");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Groups`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Lecturers`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `ProgrammeSubjects`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Students`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Programmes`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Subjects`;");
 
             migrationBuilder.CreateTable(
                 name: "Plants",
