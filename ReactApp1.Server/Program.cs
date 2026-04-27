@@ -76,6 +76,7 @@ namespace ReactWithASP.Server
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddHttpClient();
 
             // --- Register custom application services ---
             builder.Services.AddScoped<IGetPlantService, GetPlantService>();
