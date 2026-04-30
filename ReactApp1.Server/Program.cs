@@ -99,15 +99,16 @@ namespace ReactWithASP.Server
             builder.Services.AddScoped<IPlantDescriptionAiService, PlantDescriptionAiService>();
             builder.Services.Configure<SmtpEmailOptions>(config.GetSection("Smtp"));
 
-            // Choose email sender: use SmtpEmailSender when SMTP host configured; otherwise in Development use FileEmailSender to save emails to disk for testing.
-            var smtpHost = config["Smtp:Host"]; 
-            if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(smtpHost))
+            // Use SmtpEmailSender when SMTP host is configured; otherwise fallback to FileEmailSender in Development.
+            var smtpHost = config["Smtp:Host"];
+            if (!string.IsNullOrWhiteSpace(smtpHost))
             {
-                builder.Services.AddScoped<IEmailSenderService, FileEmailSender>();
+                builder.Services.AddScoped<IEmailSenderService, SmtpEmailSender>();
             }
             else
             {
-                builder.Services.AddScoped<IEmailSenderService, SmtpEmailSender>();
+                // If no SMTP configured, use file-based sender in Development for safe testing
+                builder.Services.AddScoped<IEmailSenderService, FileEmailSender>();
             }
 
             var app = builder.Build();

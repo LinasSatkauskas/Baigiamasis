@@ -30,9 +30,15 @@ export function LoginModal({ visible, onClose }: Props) {
     setResetMessage("")
     setResetError("")
 
+    const normalizedEmail = resetEmail.trim().toLowerCase()
+    if (!normalizedEmail) {
+      setResetError("Įveskite el. paštą.")
+      return
+    }
+
     try {
       const res = await postApiRaw("account/forgot-password", {
-        email: resetEmail,
+        email: normalizedEmail,
       })
       if (!res.ok) {
         const serverMessage =
@@ -45,7 +51,7 @@ export function LoginModal({ visible, onClose }: Props) {
       }
 
       setResetMessage(
-        `Jei toks el. paštas egzistuoja, atstatymo nuoroda buvo išsiųsta į ${resetEmail}.`,
+        `Jei toks el. paštas egzistuoja, atstatymo nuoroda buvo išsiųsta į ${normalizedEmail}.`,
       )
       setTimeout(() => {
         setShowForgotPassword(false)

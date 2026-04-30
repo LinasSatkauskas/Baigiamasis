@@ -46,10 +46,12 @@ namespace ReactApp1.Server.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            var email = request.Email?.Trim();
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(request.Password))
                 return BadRequest(new { title = "Invalid input", detail = "Email and password are required." });
 
-            var user = new IdentityUser { UserName = request.Email, Email = request.Email, EmailConfirmed = true };
+            var user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
@@ -62,7 +64,13 @@ namespace ReactApp1.Server.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var email = request.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
             if (user is null) return Unauthorized();
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
@@ -77,12 +85,14 @@ namespace ReactApp1.Server.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email))
+            var email = request.Email?.Trim();
+
+            if (string.IsNullOrWhiteSpace(email))
             {
                 return BadRequest(new { title = "Invalid input", detail = "Email is required." });
             }
 
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager.FindByEmailAsync(email);
             if (user is null)
             {
                 return Ok(new { message = "Jei toks el. paštas egzistuoja, atstatymo nuoroda buvo išsiųsta." });
@@ -91,7 +101,7 @@ namespace ReactApp1.Server.Controllers
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
             var baseUrl = GetFrontendBaseUrl();
-            var resetUrl = $"{baseUrl.TrimEnd('/')}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={WebUtility.UrlEncode(encodedToken)}";
+            var resetUrl = $"{baseUrl.TrimEnd('/')}/reset-password?email={WebUtility.UrlEncode(email)}&token={WebUtility.UrlEncode(encodedToken)}";
 
             var htmlBody = $"""
                 <html>
@@ -109,7 +119,7 @@ namespace ReactApp1.Server.Controllers
 
             try
             {
-                await _emailSender.SendAsync(request.Email, "Slaptažodžio atstatymas", htmlBody, textBody);
+                await _emailSender.SendAsync(email, "Slaptažodžio atstatymas", htmlBody, textBody);
             }
             catch (InvalidOperationException ex)
             {
@@ -128,12 +138,14 @@ namespace ReactApp1.Server.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Password))
+            var email = request.Email?.Trim();
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Password))
             {
                 return BadRequest(new { title = "Invalid input", detail = "Email, token and password are required." });
             }
 
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager.FindByEmailAsync(email);
             if (user is null)
             {
                 return BadRequest(new { title = "Reset failed", detail = "Paskyra nerasta." });
