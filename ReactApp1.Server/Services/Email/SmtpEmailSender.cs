@@ -35,10 +35,15 @@ public sealed class SmtpEmailSender(IOptions<SmtpEmailOptions> options, ILogger<
         using var client = new SmtpClient(_options.Host, _options.Port)
         {
             EnableSsl = _options.EnableSsl,
-            Credentials = string.IsNullOrWhiteSpace(_options.UserName)
-                ? CredentialCache.DefaultNetworkCredentials
-                : new NetworkCredential(_options.UserName, _options.Password)
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            Timeout = 10000
         };
+
+        // Ensure explicit credentials usage
+        client.UseDefaultCredentials = false;
+        client.Credentials = string.IsNullOrWhiteSpace(_options.UserName)
+            ? CredentialCache.DefaultNetworkCredentials
+            : new NetworkCredential(_options.UserName, _options.Password);
 
         _logger.LogInformation("Sending email to {Email} via SMTP host {Host}:{Port} (From: {From})", toEmail, _options.Host, _options.Port, _options.FromEmail);
 
