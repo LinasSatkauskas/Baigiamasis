@@ -22,15 +22,15 @@ public class PlantsController(
     [HttpPost]
     public async Task<IActionResult> Post(PlantDto dto)
     {
-        await savePlantService.Save(dto);
-        return Ok();
+        var saved = await savePlantService.Save(dto);
+        return Ok(saved);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, PlantDto dto)
     {
-        await savePlantService.Save(dto with { Id = id });
-        return Ok();
+        var saved = await savePlantService.Save(dto with { Id = id });
+        return Ok(saved);
     }
 
     [HttpDelete("{id:int}")]

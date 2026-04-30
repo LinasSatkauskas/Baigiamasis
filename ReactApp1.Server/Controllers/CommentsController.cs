@@ -40,15 +40,15 @@ public class CommentsController(
         if (dto.PlantId <= 0) throw new ArgumentException("PlantId is required");
         if (!await _context.Plants.AnyAsync(p => p.Id == dto.PlantId)) throw new ArgumentException("Plant does not exist");
 
-        await saveCommentService.Save(dto);
-        return Ok();
+        var saved = await saveCommentService.Save(dto);
+        return Ok(saved);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, [FromBody] CommentDto dto)
     {
-        await saveCommentService.Save(dto with { Id = id });
-        return Ok();
+        var saved = await saveCommentService.Save(dto with { Id = id });
+        return Ok(saved);
     }
 
     [HttpDelete("{id:int}")]

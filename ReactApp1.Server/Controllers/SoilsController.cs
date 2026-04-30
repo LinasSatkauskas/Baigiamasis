@@ -22,15 +22,15 @@ public class SoilsController(
     [HttpPost]
     public async Task<IActionResult> Post(SoilDto dto)
     {
-        await saveSoilService.Save(dto);
-        return Ok();
+        var saved = await saveSoilService.Save(dto);
+        return Ok(saved);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, SoilDto dto)
     {
-        await saveSoilService.Save(dto with { Id = id });
-        return Ok();
+        var saved = await saveSoilService.Save(dto with { Id = id });
+        return Ok(saved);
     }
 
     [HttpDelete("{id:int}")]

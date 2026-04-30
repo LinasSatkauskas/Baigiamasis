@@ -22,15 +22,15 @@ public class PestsController(
     [HttpPost]
     public async Task<IActionResult> Post(PestDto dto)
     {
-        await savePestService.Save(dto);
-        return Ok();
+        var saved = await savePestService.Save(dto);
+        return Ok(saved);
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Put(int id, PestDto dto)
     {
-        await savePestService.Save(dto with { Id = id });
-        return Ok();
+        var saved = await savePestService.Save(dto with { Id = id });
+        return Ok(saved);
     }
 
     [HttpDelete("{id:int}")]
