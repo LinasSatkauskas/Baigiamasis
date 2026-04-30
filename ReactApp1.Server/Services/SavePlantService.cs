@@ -7,10 +7,12 @@ namespace ReactApp1.Server.Services
     public class SavePlantService : ISavePlantService
     {
         private readonly AppDbContext _context;
+        private readonly IPlantDescriptionAiService _plantDescriptionAiService;
 
-        public SavePlantService(AppDbContext context)
+        public SavePlantService(AppDbContext context, IPlantDescriptionAiService plantDescriptionAiService)
         {
             _context = context;
+            _plantDescriptionAiService = plantDescriptionAiService;
         }
 
         public async Task<PlantDto> Save(PlantDto dto)
@@ -18,13 +20,23 @@ namespace ReactApp1.Server.Services
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new ArgumentException("Name is required.", nameof(dto));
 
+            var incomingDescription = NormalizeDescription(dto.Description);
+
             Plant plant;
             if (dto.Id.HasValue)
             {
                 plant = await _context.Plants.FindAsync(dto.Id.Value)
                     ?? throw new Exception("Plant not found");
+
+                var description = incomingDescription;
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
+                }
+                description = NormalizeDescription(description);
+
                 plant.Name = dto.Name!;
-                plant.Description = dto.Description;
+                plant.Description = description;
                 plant.SoilType = dto.SoilType;
                 plant.Pests = dto.Pests;
                 plant.PestControlMethod = dto.PestControlMethod;
@@ -33,10 +45,17 @@ namespace ReactApp1.Server.Services
             }
             else
             {
+                var description = incomingDescription;
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
+                }
+                description = NormalizeDescription(description);
+
                 plant = new Plant
                 {
                     Name = dto.Name!,
-                    Description = dto.Description,
+                    Description = description,
                     SoilType = dto.SoilType,
                     Pests = dto.Pests,
                     PestControlMethod = dto.PestControlMethod,
@@ -57,5 +76,23 @@ namespace ReactApp1.Server.Services
                 plant.ImageUrl
             );
         }
+
+        private static string? NormalizeDescription(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return null;
+            }
+
+            var trimmed = description.Trim();
+            return IsPlaceholderDescription(trimmed) || IsLegacyFallbackDescription(trimmed) ? null : trimmed;
+        }
+
+        private static bool IsPlaceholderDescription(string value)
+            => value is "-" or "–" or "—";
+
+        private static bool IsLegacyFallbackDescription(string value)
+            => value.Contains("Aprašymas bus papildytas detaliau", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("aprašymas laikinai nepasiekiamas", StringComparison.OrdinalIgnoreCase);
     }
 }

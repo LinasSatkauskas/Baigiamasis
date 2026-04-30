@@ -3,7 +3,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using ReactApp1.Server.Services.Email;
+using System.Text;
+using System.Net;
 
 namespace ReactApp1.Server.Controllers
 {
@@ -15,19 +19,27 @@ namespace ReactApp1.Server.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IOptionsMonitor<CookieAuthenticationOptions> _cookieOptions;
+        private readonly IEmailSenderService _emailSender;
+        private readonly IConfiguration _configuration;
 
         public AccountController(
             SignInManager<IdentityUser> signInManager,
             UserManager<IdentityUser> userManager,
-            IOptionsMonitor<CookieAuthenticationOptions> cookieOptions)
+            IOptionsMonitor<CookieAuthenticationOptions> cookieOptions,
+            IEmailSenderService emailSender,
+            IConfiguration configuration)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _cookieOptions = cookieOptions;
+            _emailSender = emailSender;
+            _configuration = configuration;
         }
 
         public sealed class RegisterRequest { public string Email { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
         public sealed class LoginRequest { public string Email { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; public bool RememberMe { get; set; } }
+        public sealed class ForgotPasswordRequest { public string Email { get; set; } = string.Empty; }
+        public sealed class ResetPasswordRequest { public string Email { get; set; } = string.Empty; public string Token { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
 
         [HttpPost("register")]
         [AllowAnonymous]
@@ -58,6 +70,92 @@ namespace ReactApp1.Server.Controllers
 
             await _signInManager.SignInAsync(user, isPersistent: request.RememberMe);
             return Ok(new { message = "Logged in" });
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new { title = "Invalid input", detail = "Email is required." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is null)
+            {
+                return Ok(new { message = "Jei toks el. paštas egzistuoja, atstatymo nuoroda buvo išsiųsta." });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var baseUrl = GetFrontendBaseUrl();
+            var resetUrl = $"{baseUrl.TrimEnd('/')}/reset-password?email={WebUtility.UrlEncode(request.Email)}&token={WebUtility.UrlEncode(encodedToken)}";
+
+            var htmlBody = $"""
+                <html>
+                  <body style=\"font-family:Arial,sans-serif;line-height:1.5;color:#1f2937;\">
+                    <h2 style=\"margin:0 0 16px;\">Slaptažodžio atstatymas</h2>
+                    <p>Gavome užklausą atstatyti slaptažodį jūsų paskyrai.</p>
+                    <p>Paspauskite šią nuorodą, kad nustatytumėte naują slaptažodį:</p>
+                    <p><a href=\"{resetUrl}\">Atstatyti slaptažodį</a></p>
+                    <p>Jei jūs neprašėte atstatymo, šį laišką galite ignoruoti.</p>
+                  </body>
+                </html>
+                """;
+
+            var textBody = $"Gavome užklausą atstatyti slaptažodį. Atstatymo nuoroda: {resetUrl}";
+
+            try
+            {
+                await _emailSender.SendAsync(request.Email, "Slaptažodžio atstatymas", htmlBody, textBody);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    message = "El. pašto siuntimas nėra sukonfigūruotas.",
+                    detail = ex.Message
+                });
+            }
+
+            return Ok(new { message = "Jei toks el. paštas egzistuoja, atstatymo nuoroda buvo išsiųsta." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new { title = "Invalid input", detail = "Email, token and password are required." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is null)
+            {
+                return BadRequest(new { title = "Reset failed", detail = "Paskyra nerasta." });
+            }
+
+            string token;
+            try
+            {
+                token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+            }
+            catch
+            {
+                return BadRequest(new { title = "Reset failed", detail = "Neteisinga atstatymo nuoroda." });
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, token, request.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok(new { message = "Slaptažodis sėkmingai atnaujintas." });
         }
 
         [HttpPost("logout")]
@@ -112,6 +210,17 @@ namespace ReactApp1.Server.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
             return Ok(new { user = new { user.Id, user.Email, user.UserName }, roles });
+        }
+
+        private string GetFrontendBaseUrl()
+        {
+            var configured = _configuration["Frontend:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured;
+            }
+
+            return $"{Request.Scheme}://{Request.Host}";
         }
     }
 }

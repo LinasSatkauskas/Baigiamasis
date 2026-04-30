@@ -67,6 +67,18 @@ namespace ReactApp1.Server.Data.Seed
             // Ensure admin is in Admin role
             if (!await userManager.IsInRoleAsync(user, "Admin"))
                 await userManager.AddToRoleAsync(user, "Admin");
+
+            // Remove every other user so only the configured admin remains.
+            var allUsers = userManager.Users.ToList();
+            foreach (var existingUser in allUsers)
+            {
+                if (string.Equals(existingUser.Id, user.Id, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                await userManager.DeleteAsync(existingUser);
+            }
         }
     }
 }

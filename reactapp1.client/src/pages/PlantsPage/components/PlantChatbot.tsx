@@ -25,6 +25,30 @@ type PlantChatError = {
   detail?: string
 }
 
+const buildAiFailureReason = (error?: PlantChatError) => {
+  const message = (error?.message || "").toLowerCase()
+  const detail = (error?.detail || "").toLowerCase()
+  const combined = `${message} ${detail}`
+
+  if (
+    combined.includes("api key") ||
+    combined.includes("api_key_invalid") ||
+    combined.includes("expired")
+  ) {
+    return "AI paslauga šiuo metu nepasiekiama dėl API rakto problemos."
+  }
+
+  if (message.includes("did not return a valid response")) {
+    return "AI paslauga šiuo metu nepasiekiama."
+  }
+
+  if (error?.message?.trim()) {
+    return `Priežastis: ${error.message.trim()}`
+  }
+
+  return "AI paslauga šiuo metu nepasiekiama."
+}
+
 const stripAccents = (value: string) =>
   value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 
@@ -214,8 +238,7 @@ export function PlantChatbot({ plants, visiblePlants }: Props) {
           ? okBody.reply.trim()
           : [
               "AI atsakymas nepasiekiamas.",
-              errBody?.message ? `Priežastis: ${errBody.message}` : "",
-              errBody?.detail ? `Detalė: ${errBody.detail}` : "",
+              buildAiFailureReason(errBody),
               "Parodau vietinį atsakymą:",
               fallback,
             ]

@@ -5,6 +5,7 @@ using ReactApp1.Server.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc; // add
+using ReactApp1.Server.Services.Email;
 
 namespace ReactWithASP.Server
 {
@@ -77,6 +78,7 @@ namespace ReactWithASP.Server
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddHttpClient();
+            builder.Services.AddMemoryCache();
 
             // --- Register custom application services ---
             builder.Services.AddScoped<IGetPlantService, GetPlantService>();
@@ -94,6 +96,19 @@ namespace ReactWithASP.Server
             builder.Services.AddScoped<IGetSoilService, GetSoilService>();
             builder.Services.AddScoped<ISaveSoilService, SaveSoilService>();
             builder.Services.AddScoped<IDeleteSoilService, DeleteSoilService>();
+            builder.Services.AddScoped<IPlantDescriptionAiService, PlantDescriptionAiService>();
+            builder.Services.Configure<SmtpEmailOptions>(config.GetSection("Smtp"));
+
+            // Choose email sender: use SmtpEmailSender when SMTP host configured; otherwise in Development use FileEmailSender to save emails to disk for testing.
+            var smtpHost = config["Smtp:Host"]; 
+            if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(smtpHost))
+            {
+                builder.Services.AddScoped<IEmailSenderService, FileEmailSender>();
+            }
+            else
+            {
+                builder.Services.AddScoped<IEmailSenderService, SmtpEmailSender>();
+            }
 
             var app = builder.Build();
 
@@ -122,6 +137,7 @@ namespace ReactWithASP.Server
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapFallbackToFile("index.html");
 
             app.Run();
         }

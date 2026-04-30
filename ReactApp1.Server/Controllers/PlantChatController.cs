@@ -4,12 +4,16 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.Models.DTOs;
+using ReactApp1.Server.Services;
 
 namespace ReactApp1.Server.Controllers;
 
 [ApiController]
 [Route("api/plantchat")]
-public class PlantChatController(IConfiguration configuration, IHttpClientFactory httpClientFactory) : ControllerBase
+public class PlantChatController(
+    IConfiguration configuration,
+    IHttpClientFactory httpClientFactory,
+    IPlantDescriptionAiService plantDescriptionAiService) : ControllerBase
 {
     private sealed record GeminiResult(bool Success, string? Reply, string? Error);
     private sealed record ModelListResult(List<string> Models, string? Error);
@@ -33,8 +37,9 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
         var configuredModel = configuration["Gemini:Model"];
         var modelResult = await GetCandidateModelsAsync(apiKey, configuredModel);
         var candidateModels = modelResult.Models;
+        var effectiveRequest = await EnrichMissingPlantDescriptionsAsync(request);
         var internetContext = request.IncludeInternet
-            ? await TryBuildInternetContextAsync(request.Message, request.Plants)
+            ? await TryBuildInternetContextAsync(request.Message, effectiveRequest.Plants)
             : null;
 
         if (candidateModels.Count == 0)
@@ -49,13 +54,22 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
         GeminiResult? lastFailure = null;
         foreach (var model in candidateModels)
         {
-            var result = await AskGeminiAsync(apiKey, model, request, internetContext);
+            var result = await AskGeminiAsync(apiKey, model, effectiveRequest, internetContext);
             if (result.Success && !string.IsNullOrWhiteSpace(result.Reply))
             {
                 return Ok(new PlantChatResponseDto(result.Reply));
             }
 
             lastFailure = result;
+        }
+
+        var lastError = lastFailure?.Error ?? string.Empty;
+        if (ContainsInvalidApiKeyError(lastError))
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Gemini API key is invalid or expired."
+            });
         }
 
         return StatusCode(StatusCodes.Status502BadGateway, new
@@ -174,16 +188,29 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
     private static string BuildPrompt(PlantChatRequestDto request, string? internetContext)
     {
         var plants = (request.Plants ?? []).Take(25).ToList();
-        var plantLines = plants.Count == 0
-            ? "Nėra pateiktų augalų."
-            : string.Join('\n', plants.Select(plant =>
+        var userMessageNormalized = NormalizeForLookup(request.Message ?? "");
+
+        // Tikrinti, ar vartotojas nurodas į sąrašą bendrai
+        var isAskingAboutList = ContainsListReference(userMessageNormalized);
+
+        // Rasti minimus augalus klausime
+        var mentionedPlants = plants
+            .Where(p => !string.IsNullOrWhiteSpace(p.Name) && userMessageNormalized.Contains(NormalizeForLookup(p.Name)))
+            .ToList();
+
+        // Jei vartotojas klausia apie "sąrašą" bendrai, naudoti visus augalus
+        var plantsToShow = isAskingAboutList || mentionedPlants.Count == 0 ? plants : mentionedPlants;
+
+        var plantLines = plantsToShow.Count == 0
+            ? "(Nėra augalų sąraše)"
+            : string.Join('\n', plantsToShow.Select(plant =>
                 $"- {plant.Name}: {FormatField("aprašymas", plant.Description)}; {FormatField("dirvožemis", plant.SoilType)}; {FormatField("kenkėjai", plant.Pests)}; {FormatField("kontrolė", plant.PestControlMethod)}"));
 
         var internetSection = string.IsNullOrWhiteSpace(internetContext)
             ? "Interneto kontekstas: nepateikta."
             : $"Interneto kontekstas:\n{internetContext}";
 
-        return $"Vartotojo klausimas: {request.Message}\n\nPateikti augalai:\n{plantLines}\n\n{internetSection}\n\nUžduotis: atsakyk natūraliai, padėk apie augalus, jų priežiūrą, dirvožemį ir kenkėjus. Jei vartotojas mini konkretų augalą ir yra sąrašo duomenys, naudok juos kaip pirminį šaltinį. Jei klausimas bendrinis arba sąraše nėra atsakymo, gali naudoti interneto kontekstą.";
+        return $"Vartotojo klausimas: {request.Message}\n\nAugalai iš Jūsų sąrašo:\n{plantLines}\n\n{internetSection}\n\nUžduotis: Atsakyk geriausiai, kaip galėdamas. 1) Jei vartotojas klausia apie konkrečius augalus iš sąrašo – naudok jų DB duomenis; 2) jei yra interneto kontekstas – naudok jį; 3) jei konteksto nepakanka – naudok savo žinias apie augalus. Suteik trumpą, aiškų atsakymą.";
     }
 
     private async Task<string?> TryBuildInternetContextAsync(string userMessage, IReadOnlyList<PlantChatPlantDto>? plants)
@@ -235,6 +262,38 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
         }
     }
 
+    private async Task<PlantChatRequestDto> EnrichMissingPlantDescriptionsAsync(PlantChatRequestDto request)
+    {
+        if (request.Plants is null || request.Plants.Count == 0)
+        {
+            return request;
+        }
+
+        var updatedPlants = new List<PlantChatPlantDto>(request.Plants.Count);
+        var changed = false;
+
+        foreach (var plant in request.Plants)
+        {
+            if (!string.IsNullOrWhiteSpace(plant.Description) || string.IsNullOrWhiteSpace(plant.Name))
+            {
+                updatedPlants.Add(plant);
+                continue;
+            }
+
+            var description = await plantDescriptionAiService.GenerateAsync(plant.Name, plant.SoilType, plant.Pests);
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                updatedPlants.Add(plant);
+                continue;
+            }
+
+            changed = true;
+            updatedPlants.Add(plant with { Description = description });
+        }
+
+        return changed ? request with { Plants = updatedPlants } : request;
+    }
+
     private async Task<GeminiResult> CallGeminiAsync(string apiKey, string model, string prompt, int maxOutputTokens)
     {
         var payload = new
@@ -243,7 +302,7 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
             {
                 parts = new[]
                 {
-                    new { text = "Tu esi augalų asistentas. Atsakyk lietuviškai, trumpai ir aiškiai. Nenaudok markdown simbolių, jei to neprašo vartotojas. Atsakymui prioritetas: 1) pateiktas vartotojo augalų sąrašas, 2) interneto kontekstas bendrai informacijai. Jei atsakai naudodamas interneto kontekstą, trumpai paminėk tai atsakymo pabaigoje. Jei duomenų trūksta, aiškiai pasakyk, ko trūksta, užuot spėjęs." }
+                    new { text = "Tu esi augalų asistentas. Atsakyk lietuviškai, trumpai ir aiškiai. Nenaudok markdown simbolių, jei to neprašo vartotojas. PRIORITETAI: 1) jei vartotojas mini konkretų augalą iš pateikto DB sąrašo, naudok to augalo duomenis; 2) interneto kontekstas, jei yra; 3) Tavo žinios ir faktai iš tavęs. SVARBU: Jei klausimas bendrinis arba nereikia DB augalų, NEGRĄŽINK viso DB sąrašo. Naudok savo žinias tiesiogiai, kai to reikia. Jei duomenų trūksta, pasakyk aiškiai, bet suteik geriausią atsakymą iš to, ką žinai." }
                 }
             },
             contents = new[]
@@ -507,4 +566,34 @@ public class PlantChatController(IConfiguration configuration, IHttpClientFactor
 
     private static string FormatField(string label, string? value)
         => string.IsNullOrWhiteSpace(value) ? $"{label}: nenurodyta" : $"{label}: {value}";
+
+    private static bool ContainsInvalidApiKeyError(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return value.Contains("API_KEY_INVALID", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("api key expired", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("invalid api key", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsListReference(string? normalizedMessage)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedMessage))
+        {
+            return false;
+        }
+
+        var listIndicators = new[]
+        {
+            "sarašas", "sarase", "is tu", "iš tų", "iš šito", "šie augalai", "šiem augalam",
+            "jūsų augalai", "jusų augalai", "jusu augalai", "jusu sarašo",
+            "šio sąrašo", "šios lentelės", "šitoje lentelėje", "žemiau", "puslapyje",
+            "matomi", "pateikti", "nuroditi", "iš sąrašo", "iš saraš"
+        };
+
+        return listIndicators.Any(indicator => normalizedMessage.Contains(indicator, StringComparison.OrdinalIgnoreCase));
+    }
 }
