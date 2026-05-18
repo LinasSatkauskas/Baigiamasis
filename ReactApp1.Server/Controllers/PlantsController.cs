@@ -6,6 +6,7 @@ namespace ReactApp1.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[IgnoreAntiforgeryToken]
 public class PlantsController : ControllerBase
 {
     private readonly IGetPlantService _getPlantService;
