@@ -87,7 +87,7 @@ public class PlantDescriptionAiService(
                 var wiki = await TryGenerateWithWikipediaAsync(client, plantName);
                 if (!string.IsNullOrWhiteSpace(wiki))
                 {
-                    var first = ExtractFirstSentences(wiki, 2);
+                    var first = ExtractFirstSentences(wiki, 1);
                         if (!string.IsNullOrWhiteSpace(first))
                         {
                             clean = Cleanup(first);
