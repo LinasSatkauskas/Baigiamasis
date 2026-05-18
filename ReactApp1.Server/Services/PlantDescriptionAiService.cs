@@ -79,6 +79,22 @@ public class PlantDescriptionAiService(
                 return null;
             }
 
+            // If the AI returned an excessively short or truncated result (e.g. 2-3 words),
+            // prefer the first full sentence from Wikipedia to ensure a useful description.
+            if (IsTooShortOrNotSentence(clean))
+            {
+                logger.LogInformation("Generated description was too short; attempting Wikipedia fallback for {PlantName}.", plantName);
+                var wiki = await TryGenerateWithWikipediaAsync(client, plantName);
+                if (!string.IsNullOrWhiteSpace(wiki))
+                {
+                    var first = ExtractFirstSentences(wiki, 2);
+                        if (!string.IsNullOrWhiteSpace(first))
+                        {
+                            clean = Cleanup(first);
+                        }
+                }
+            }
+
             memoryCache.Set(key, clean, TimeSpan.FromHours(24));
             return clean;
         }
@@ -273,6 +289,50 @@ public class PlantDescriptionAiService(
     {
         var trimmed = value.Trim();
         return trimmed is "-" or "–" or "—";
+    }
+
+    private static bool IsTooShortOrNotSentence(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        var words = text.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length < 6)
+            return true;
+
+        // Check for sentence ending punctuation
+        if (!text.Contains('.') && !text.Contains('!') && !text.Contains('?'))
+            return true;
+
+        return false;
+    }
+
+    private static string? ExtractFirstSentences(string text, int count)
+    {
+        if (string.IsNullOrWhiteSpace(text) || count <= 0) return null;
+        var sentences = new List<string>();
+        var sb = new StringBuilder();
+        foreach (var ch in text)
+        {
+            sb.Append(ch);
+            if (ch == '.' || ch == '!' || ch == '?')
+            {
+                var s = sb.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(s))
+                {
+                    sentences.Add(s);
+                    sb.Clear();
+                    if (sentences.Count >= count) break;
+                }
+            }
+        }
+
+        if (sentences.Count > 0)
+        {
+            return string.Join(" ", sentences).Trim();
+        }
+
+        // No sentence punctuation found — return a reasonable prefix
+        var trimmed = text.Trim();
+        return trimmed.Length <= 200 ? trimmed : trimmed.Substring(0, 200).TrimEnd() + "...";
     }
 
     private static string StripLeadingBullets(string text)
