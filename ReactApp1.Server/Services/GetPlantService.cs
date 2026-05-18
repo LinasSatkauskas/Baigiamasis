@@ -67,6 +67,7 @@ namespace ReactApp1.Server.Services
             }
 
             var generated = await plantDescriptionAiService.GenerateAsync(plant.Name, plant.SoilType, plant.Pests);
+            logger.LogDebug("Generated description for {PlantName}: '{Generated}' (len={Len})", plant.Name, generated, generated?.Length ?? 0);
             if (string.IsNullOrWhiteSpace(generated))
             {
                 plant.Description = null;
@@ -75,6 +76,7 @@ namespace ReactApp1.Server.Services
             }
 
             var clean = generated.Trim();
+            logger.LogDebug("Cleaned description for {PlantName}: '{Clean}' (len={Len})", plant.Name, clean, clean.Length);
             if (IsMissingDescription(clean))
             {
                 plant.Description = null;

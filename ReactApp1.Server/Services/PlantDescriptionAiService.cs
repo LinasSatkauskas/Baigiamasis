@@ -298,6 +298,10 @@ public class PlantDescriptionAiService(
         if (words.Length < 6)
             return true;
 
+        // If the text is very short in characters, treat as too short
+        if (text.Trim().Length < 40)
+            return true;
+
         // Check for sentence ending punctuation
         if (!text.Contains('.') && !text.Contains('!') && !text.Contains('?'))
             return true;
