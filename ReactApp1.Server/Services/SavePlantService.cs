@@ -8,12 +8,14 @@ namespace ReactApp1.Server.Services
     {
         private readonly AppDbContext _context;
         private readonly IPlantDescriptionAiService _plantDescriptionAiService;
+        private readonly ILogger<SavePlantService> _logger;
 
-        public SavePlantService(AppDbContext context, IPlantDescriptionAiService plantDescriptionAiService)
-        {
-            _context = context;
-            _plantDescriptionAiService = plantDescriptionAiService;
-        }
+            public SavePlantService(AppDbContext context, IPlantDescriptionAiService plantDescriptionAiService, ILogger<SavePlantService> logger)
+            {
+                _context = context;
+                _plantDescriptionAiService = plantDescriptionAiService;
+                _logger = logger;
+            }
 
         public async Task<PlantDto> Save(PlantDto dto)
         {
@@ -21,6 +23,7 @@ namespace ReactApp1.Server.Services
                 throw new ArgumentException("Name is required.", nameof(dto));
 
             var incomingDescription = NormalizeDescription(dto.Description);
+            _logger.LogInformation("Saving plant {Name}: incoming description length={Len}", dto.Name, incomingDescription?.Length ?? 0);
 
             Plant plant;
             if (dto.Id.HasValue)
@@ -29,10 +32,18 @@ namespace ReactApp1.Server.Services
                     ?? throw new Exception("Plant not found");
 
                 var description = incomingDescription;
+                // If the incoming description exists but is very short, prefer generated description
+                if (!string.IsNullOrWhiteSpace(description) && description.Trim().Length < 40)
+                {
+                    _logger.LogInformation("Incoming description very short (len={Len}) — regenerating via AI for {Name}", description.Length, dto.Name);
+                    description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
+                }
+
                 if (string.IsNullOrWhiteSpace(description))
                 {
                     description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
                 }
+
                 description = NormalizeDescription(description);
 
                 plant.Name = dto.Name!;
@@ -46,10 +57,18 @@ namespace ReactApp1.Server.Services
             else
             {
                 var description = incomingDescription;
+                // If client provided a very short description, prefer AI generated one
+                if (!string.IsNullOrWhiteSpace(description) && description.Trim().Length < 40)
+                {
+                    _logger.LogInformation("Incoming description very short (len={Len}) — regenerating via AI for new plant {Name}", description.Length, dto.Name);
+                    description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
+                }
+
                 if (string.IsNullOrWhiteSpace(description))
                 {
                     description = await _plantDescriptionAiService.GenerateAsync(dto.Name!, dto.SoilType, dto.Pests);
                 }
+
                 description = NormalizeDescription(description);
 
                 plant = new Plant
@@ -65,6 +84,7 @@ namespace ReactApp1.Server.Services
             }
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Saved plant {Name} (id={Id}): description length={Len}", plant.Name, plant.Id, plant.Description?.Length ?? 0);
 
             return new PlantDto(
                 plant.Id,
