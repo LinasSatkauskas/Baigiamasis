@@ -44,7 +44,7 @@ namespace ReactWithASP.Server
             var mysqlConn = $"server=mysql.railway.internal;port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseMySql(mysqlConn, ServerVersion.AutoDetect(mysqlConn))
+                options.UseMySql(mysqlConn, new MySqlServerVersion(new Version(8, 0, 0)))
             );
 
             builder.Services
