@@ -4,7 +4,8 @@
     "dev:server": "dotnet run --project ReactApp1.Server/ReactApp1.Server.csproj --launch-profile http",
     "dev:client": "npm --prefix reactapp1.client run dev",
     "build": "npm --prefix reactapp1.client run build && npm run copy-assets",
-    "copy-assets": "node copy-assets.js"
+    "copy-assets": "node copy-assets.js",
+    "start": "dotnet run --project ReactApp1.Server/ReactApp1.Server.csproj --launch-profile http"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",
