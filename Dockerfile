@@ -13,6 +13,7 @@ COPY . .
 
 # Build React client
 RUN npm install
+RUN npm --prefix reactapp1.client install
 RUN npm run build
 
 # Build .NET backend
