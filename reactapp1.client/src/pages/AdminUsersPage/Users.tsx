@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { deleteApi, getApi } from "@/api"
 import { useAuthStore } from "@/store/authStore"
 import { IUserItem } from "@/interfaces/IUser"
@@ -8,6 +8,8 @@ export default function Users() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [query, setQuery] = useState<string>("")
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const currentUser = useAuthStore((s) => s.user)
 
@@ -25,6 +27,19 @@ export default function Users() {
   useEffect(() => {
     loadUsers()
   }, [])
+
+  const matchesQuery = (user: IUserItem, q: string) => {
+    if (!q) return true
+    const needle = q.toLowerCase()
+    return (
+      (user.email ?? "").toLowerCase().includes(needle) ||
+      (user.userName ?? "").toLowerCase().includes(needle)
+    )
+  }
+
+  const visibleUsers = useMemo(() => {
+    return users.filter((u) => matchesQuery(u, query))
+  }, [users, query])
 
   const deleteUser = async (user: IUserItem) => {
     if (!user.id) return
@@ -58,14 +73,50 @@ export default function Users() {
             paskyras.
           </div>
         </div>
-        <button
-          type="button"
-          className="rounded-md bg-emerald-700 px-4 py-2 text-white hover:bg-emerald-800 disabled:opacity-60"
-          onClick={loadUsers}
-          disabled={loading}
-        >
-          {loading ? "Kraunama..." : "Atnaujinti"}
-        </button>
+        <div className="flex gap-3">
+          <div className="relative w-40 sm:w-46">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Paieška el. paštu..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 pr-9"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Išvalyti paiešką"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={() => {
+                  setQuery("")
+                  searchInputRef.current?.focus()
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-4 w-4"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-1.28-5.03 1.28-1.28 1.28 1.28a.75.75 0 1 0 1.06-1.06L11.06 9.59l1.28-1.28A.75.75 0 1 0 11.28 7.25L10 8.53 8.72 7.25a.75.75 0 1 0-1.06 1.06l1.28 1.28-1.28 1.28a.75.75 0 1 0 1.06 1.06Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className="rounded-md bg-emerald-700 px-4 py-2 text-white hover:bg-emerald-800 disabled:opacity-60"
+            onClick={loadUsers}
+            disabled={loading}
+          >
+            {loading ? "Kraunama..." : "Atnaujinti"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -94,7 +145,7 @@ export default function Users() {
             </tr>
           </thead>
           <tbody className="divide-y divide-emerald-50">
-            {users.map((user) => {
+            {visibleUsers.map((user) => {
               const label = user.email ?? user.userName ?? user.id
               const isCurrent =
                 currentUser?.id === user.id || user.isCurrentUser
@@ -139,7 +190,7 @@ export default function Users() {
                       disabled={loading || deletingId === user.id || isCurrent}
                       title={
                         isCurrent
-                          ? "Savo paskyros ištrinti negalite"
+                          ? "Savo paskylos ištrinti negalite"
                           : `Ištrinti ${label}`
                       }
                     >
@@ -149,10 +200,10 @@ export default function Users() {
                 </tr>
               )
             })}
-            {!loading && users.length === 0 && (
+            {!loading && visibleUsers.length === 0 && (
               <tr>
                 <td className="px-4 py-6 text-sm text-gray-500" colSpan={5}>
-                  Vartotojų nerasta.
+                  {query ? "Vartotojų nerasta pagal paiešką." : "Vartotojų nerasta."}
                 </td>
               </tr>
             )}
