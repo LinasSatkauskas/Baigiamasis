@@ -37,15 +37,26 @@ namespace ReactWithASP.Server
             var config = builder.Configuration;
             
             // Get MySQL credentials from environment variables (set from .env or Railway)
+            var mysqlHost = Environment.GetEnvironmentVariable("MySQL_Host") ?? Environment.GetEnvironmentVariable("MySQL:Host") ?? "localhost";
             var mysqlDb = Environment.GetEnvironmentVariable("MySQL_Db") ?? Environment.GetEnvironmentVariable("MySQL:Db") ?? config["MySQL:Db"];
             var mysqlUser = Environment.GetEnvironmentVariable("MySQL_User") ?? Environment.GetEnvironmentVariable("MySQL:User") ?? config["MySQL:User"];
             var mysqlPassword = Environment.GetEnvironmentVariable("MySQL_Password") ?? Environment.GetEnvironmentVariable("MySQL:Password") ?? config["MySQL:Password"];
 
-            var mysqlConn = $"server=mysql.railway.internal;port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+            Console.WriteLine($"[DEBUG] MySQL Config - Host: {mysqlHost}, DB: {mysqlDb}, User: {mysqlUser}");
 
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseMySql(mysqlConn, new MySqlServerVersion(new Version(8, 0, 0)))
-            );
+            var mysqlConn = $"server={mysqlHost};port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+
+            try
+            {
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseMySql(mysqlConn, new MySqlServerVersion(new Version(8, 0, 0)))
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database connection failed: {ex.Message}");
+                throw;
+            }
 
             builder.Services
                 .AddIdentityCore<IdentityUser>(options =>
