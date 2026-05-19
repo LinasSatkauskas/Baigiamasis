@@ -17,14 +17,15 @@ namespace ReactWithASP.Server
 
             // Load configuration from appsettings
             var config = builder.Configuration;
-            var mysqlDb = config["MySQL:Db"];
-            var mysqlUser = config["MySQL:User"];
-            var mysqlPassword = config["MySQL:Password"];
+            var mysqlHost = Environment.GetEnvironmentVariable("MySQL_Host") ?? Environment.GetEnvironmentVariable("MySQL:Host") ?? config["MySQL:Host"] ?? "localhost";
+            var mysqlDb = Environment.GetEnvironmentVariable("MySQL_Db") ?? Environment.GetEnvironmentVariable("MySQL:Db") ?? config["MySQL:Db"];
+            var mysqlUser = Environment.GetEnvironmentVariable("MySQL_User") ?? Environment.GetEnvironmentVariable("MySQL:User") ?? config["MySQL:User"];
+            var mysqlPassword = Environment.GetEnvironmentVariable("MySQL_Password") ?? Environment.GetEnvironmentVariable("MySQL:Password") ?? config["MySQL:Password"];
 
-            var mysqlConn = $"server=localhost;port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+            var mysqlConn = $"server={mysqlHost};port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseMySql(mysqlConn, ServerVersion.AutoDetect(mysqlConn))
+                options.UseMySql(mysqlConn, new MySqlServerVersion(new Version(8, 0, 0)))
             );
 
             builder.Services
