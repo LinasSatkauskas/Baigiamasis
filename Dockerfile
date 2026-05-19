@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Install Node.js for React build
@@ -21,7 +21,7 @@ RUN dotnet build "ReactApp1.Server/ReactApp1.Server.csproj" -c Release -o /app/b
 FROM build AS publish
 RUN dotnet publish "ReactApp1.Server/ReactApp1.Server.csproj" -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=publish /app/publish .
 
