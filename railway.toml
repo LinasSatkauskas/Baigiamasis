@@ -1,0 +1,5 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "dotnet ReactApp1.Server/ReactApp1.Server.dll"
