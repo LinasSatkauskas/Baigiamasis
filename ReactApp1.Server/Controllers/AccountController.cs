@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ReactApp1.Server.Services.Email;
 using System.Text;
@@ -40,6 +41,14 @@ namespace ReactApp1.Server.Controllers
         public sealed class LoginRequest { public string Email { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; public bool RememberMe { get; set; } }
         public sealed class ForgotPasswordRequest { public string Email { get; set; } = string.Empty; }
         public sealed class ResetPasswordRequest { public string Email { get; set; } = string.Empty; public string Token { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
+        public sealed class UserListItem
+        {
+            public string Id { get; set; } = string.Empty;
+            public string? Email { get; set; }
+            public string? UserName { get; set; }
+            public string[] Roles { get; set; } = [];
+            public bool IsCurrentUser { get; set; }
+        }
 
         [HttpPost("register")]
         [AllowAnonymous]
@@ -222,6 +231,62 @@ namespace ReactApp1.Server.Controllers
 
             var roles = await _userManager.GetRolesAsync(user);
             return Ok(new { user = new { user.Id, user.Email, user.UserName }, roles });
+        }
+
+        [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var users = await _userManager.Users
+                .OrderBy(u => u.Email ?? u.UserName)
+                .ToListAsync();
+
+            var result = new List<UserListItem>();
+            foreach (var identityUser in users)
+            {
+                var roles = await _userManager.GetRolesAsync(identityUser);
+                result.Add(new UserListItem
+                {
+                    Id = identityUser.Id,
+                    Email = identityUser.Email,
+                    UserName = identityUser.UserName,
+                    Roles = roles.ToArray(),
+                    IsCurrentUser = currentUser?.Id == identityUser.Id
+                });
+            }
+
+            return Ok(result);
+        }
+
+        [HttpDelete("users/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new { title = "Invalid input", detail = "User id is required." });
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser?.Id == id)
+            {
+                return BadRequest(new { title = "Delete blocked", detail = "Negalite ištrinti savo paskyros." });
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user is null)
+            {
+                return NotFound(new { title = "Not found", detail = "Vartotojas nerastas." });
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return Ok(new { message = "User deleted" });
         }
 
         private string GetFrontendBaseUrl()

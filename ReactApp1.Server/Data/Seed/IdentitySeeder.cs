@@ -19,7 +19,7 @@ namespace ReactApp1.Server.Data.Seed
             var env = services.GetRequiredService<IHostEnvironment>();
 
             // Ensure required roles
-            string[] roles = ["Admin", "User"];
+            string[] roles = new[] { "Admin", "User" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
@@ -68,17 +68,9 @@ namespace ReactApp1.Server.Data.Seed
             if (!await userManager.IsInRoleAsync(user, "Admin"))
                 await userManager.AddToRoleAsync(user, "Admin");
 
-            // Remove every other user so only the configured admin remains.
-            var allUsers = userManager.Users.ToList();
-            foreach (var existingUser in allUsers)
-            {
-                if (string.Equals(existingUser.Id, user.Id, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                await userManager.DeleteAsync(existingUser);
-            }
+            // Do NOT remove other users on startup — keep any users created at runtime.
+            // Previous behavior deleted all non-admin users each startup which
+            // caused newly created users to disappear after a server restart.
         }
     }
 }

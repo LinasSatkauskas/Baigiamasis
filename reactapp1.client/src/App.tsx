@@ -5,6 +5,7 @@ import { Layout } from "./pages/Layout"
 import Plants from "./pages/PlantsPage/Plants"
 import Pests from "./pages/PestsPage/Pests"
 import Soils from "./pages/SoilsPage/Soils"
+import Users from "./pages/AdminUsersPage/Users"
 import { useAuthStore } from "@/store/authStore"
 import ResetPasswordPage from "./pages/Auth/ResetPasswordPage"
 
@@ -42,6 +43,14 @@ export default function App() {
           element: (
             <RequireAdmin>
               <Soils />
+            </RequireAdmin>
+          ),
+        },
+        {
+          path: "users",
+          element: (
+            <RequireAdmin>
+              <Users />
             </RequireAdmin>
           ),
         },

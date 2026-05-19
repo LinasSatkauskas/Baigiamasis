@@ -77,6 +77,11 @@ export function Layout() {
                 {isAdmin() && (
                   <>
                     <li>
+                      <Link to="/users" onClick={closeSidebar}>
+                        Vartotojai
+                      </Link>
+                    </li>
+                    <li>
                       <Link to="/pests" onClick={closeSidebar}>
                         Kenkėjai
                       </Link>
