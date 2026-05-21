@@ -4,9 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <SpaRoot>..\reactapp1.client</SpaRoot>
-    <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
-    <SpaProxyServerUrl>http://localhost:63835</SpaProxyServerUrl>
+      <!-- No SPA proxy; frontend is served from wwwroot -->
+      <!-- SPA proxy removed for serving built static files in development -->
+      <SpaRoot></SpaRoot>
     <UserSecretsId>fe40fb7d-4740-4e3a-8673-cd16cdfddd71</UserSecretsId>
   </PropertyGroup>
 
@@ -14,9 +14,7 @@
     <!-- Removed Microsoft.AspNetCore.Authentication.Cookies 2.3.0 (incompatible; cookies are in the shared framework) -->
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
-      <Version>9.*-*</Version>
-    </PackageReference>
+    <!-- SPA proxy removed for serving built static files in development -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
       <PrivateAssets>all</PrivateAssets>

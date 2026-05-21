@@ -29,6 +29,16 @@ export function CommentsSection({ plantId, plantName }: Props) {
   const canEditComment = (comment: IComment) =>
     isAdmin() || comment.email.toLowerCase() === currentEmailLower
 
+  const formatCommentTime = (value?: string | null) => {
+    if (!value) return ""
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleString("lt-LT", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
+  }
+
   const defaults = useMemo<IComment>(
     () => ({
       id: undefined,
@@ -189,35 +199,43 @@ export function CommentsSection({ plantId, plantName }: Props) {
       <div className="flex items-start gap-6 flex-wrap">
         <div className="flex-1 min-w-[20rem]">
           <div className="overflow-hidden rounded-lg shadow ring-1 ring-gray-200 bg-white">
-            <table className="min-w-full table-auto">
+            <table className="min-w-full table-fixed">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  <th className="w-56 px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Vartotojo paštas
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Komentaras
                   </th>
-                  <th className="px-4 py-3"></th>
+                  <th className="w-28 px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {comments.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 align-top">
+                    <td className="w-56 px-4 py-3 align-top">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-semibold ring-1 ring-emerald-200">
                           {c.email?.[0]?.toUpperCase() ?? "?"}
                         </div>
-                        <div className="text-sm text-gray-900">{c.email}</div>
+                        <div className="min-w-0 text-sm text-gray-900 break-words">
+                          {c.email}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 align-top">
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                      <div className="max-w-[100ch] text-sm text-gray-700 whitespace-pre-wrap break-words">
                         {c.text}
                       </div>
+                      <div className="mt-2 text-xs text-gray-500 space-y-1">
+                        <div>Sukurta: {formatCommentTime(c.createdAt)}</div>
+                        {c.updatedAt && c.updatedAt !== c.createdAt && (
+                          <div>Redaguota: {formatCommentTime(c.updatedAt)}</div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 align-top text-right">
+                    <td className="w-28 px-4 py-3 align-top text-right">
                       {canEditComment(c) && (
                         <button
                           className="text-emerald-700 hover:text-emerald-900 font-medium text-sm"

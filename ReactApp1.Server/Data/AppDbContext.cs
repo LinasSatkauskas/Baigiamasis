@@ -43,6 +43,8 @@ namespace ReactApp1.Server.Data
 
             modelBuilder.Entity<Comment>(entity =>
             {
+                entity.Property(c => c.CreatedAt).IsRequired().HasColumnType("datetime(6)");
+                entity.Property(c => c.UpdatedAt).HasColumnType("datetime(6)");
                 entity.Property(c => c.Email).IsRequired().HasMaxLength(100);
                 entity.Property(c => c.Text).IsRequired().HasMaxLength(1000);
             });

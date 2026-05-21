@@ -34,6 +34,6 @@ namespace ReactApp1.Server.Services
         }
 
         private static CommentDto MapDto(Comment c)
-            => new(c.Id, c.PlantId, c.Email, c.Text, c.IsApproved);
+            => new(c.Id, c.PlantId, c.CreatedAt, c.UpdatedAt, c.Email, c.Text, c.IsApproved);
     }
 }

@@ -7,6 +7,11 @@ namespace ReactApp1.Server.Models.Entities
         [Required]
         public int PlantId { get; set; }  // NEW: link to Plant
 
+        [Required]
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         [Required, MaxLength(100)]
         public string Email { get; set; } = string.Empty;
 

@@ -27,6 +27,7 @@ namespace ReactApp1.Server.Services
                 entity.Email = dto.Email!;
                 entity.Text = dto.Text!;
                 entity.IsApproved = dto.IsApproved;
+                entity.UpdatedAt = DateTime.UtcNow;
                 _context.Comments.Update(entity);
             }
             else
@@ -34,6 +35,7 @@ namespace ReactApp1.Server.Services
                 entity = new Comment
                 {
                     PlantId = dto.PlantId,
+                    CreatedAt = DateTime.UtcNow,
                     Email = dto.Email!,
                     Text = dto.Text!,
                     IsApproved = dto.IsApproved
@@ -42,7 +44,7 @@ namespace ReactApp1.Server.Services
             }
 
             await _context.SaveChangesAsync();
-            return new CommentDto(entity.Id, entity.PlantId, entity.Email, entity.Text, entity.IsApproved);
+            return new CommentDto(entity.Id, entity.PlantId, entity.CreatedAt, entity.UpdatedAt, entity.Email, entity.Text, entity.IsApproved);
         }
     }
 }

@@ -18,6 +18,21 @@ namespace ReactWithASP.Server
 
             var builder = WebApplication.CreateBuilder(args);
 
+            // Explicitly configure Kestrel to ensure HTTP and HTTPS endpoints are bound.
+            // Bind HTTP to any IP so the app is reachable on the LAN, and bind HTTPS to the machine LAN IP.
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                // HTTP endpoint on 0.0.0.0:5166
+                options.ListenAnyIP(5166);
+
+                // HTTPS endpoint on the LAN IP at 7047. Replace this IP if your machine's LAN address changes.
+                // This will use the default certificate store. Browsers will warn unless the certificate is valid for the IP.
+                options.Listen(System.Net.IPAddress.Parse("192.168.68.104"), 7047, listenOptions =>
+                {
+                    listenOptions.UseHttps();
+                });
+            });
+
             // Load configuration from appsettings
             var config = builder.Configuration;
             var mysqlHost = Environment.GetEnvironmentVariable("MySQL_Host") ?? Environment.GetEnvironmentVariable("MySQL:Host") ?? config["MySQL:Host"] ?? "localhost";
