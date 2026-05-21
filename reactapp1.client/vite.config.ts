@@ -31,6 +31,11 @@ export default defineConfig({
         target,
         secure: false,
       },
+      "^/hubs": {
+        target,
+        secure: false,
+        ws: true,
+      },
     },
     port: parseInt(env.DEV_SERVER_PORT || "63835"),
   },

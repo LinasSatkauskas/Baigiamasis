@@ -5,6 +5,7 @@ using ReactApp1.Server.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc; // add
+using ReactApp1.Server.Hubs;
 using ReactApp1.Server.Services.Email;
 
 namespace ReactWithASP.Server
@@ -82,6 +83,7 @@ namespace ReactWithASP.Server
             builder.Services.AddSwaggerGen();
             builder.Services.AddHttpClient();
             builder.Services.AddMemoryCache();
+            builder.Services.AddSignalR();
 
             // --- Register custom application services ---
             builder.Services.AddScoped<IGetPlantService, GetPlantService>();
@@ -139,6 +141,7 @@ namespace ReactWithASP.Server
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<CommentsHub>("/hubs/comments");
             app.MapFallbackToFile("index.html");
 
             app.Run();
