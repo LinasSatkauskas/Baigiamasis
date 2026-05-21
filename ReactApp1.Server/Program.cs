@@ -13,6 +13,8 @@ namespace ReactWithASP.Server
     {
         public static void Main(string[] args)
         {
+            LoadEnvironmentFile();
+
             var builder = WebApplication.CreateBuilder(args);
 
             // Load configuration from appsettings
@@ -100,7 +102,6 @@ namespace ReactWithASP.Server
             builder.Services.AddScoped<IPlantDescriptionAiService, PlantDescriptionAiService>();
             builder.Services.Configure<SmtpEmailOptions>(config.GetSection("Smtp"));
 
-            // Use SmtpEmailSender when SMTP host is configured; otherwise fallback to FileEmailSender in Development.
             var smtpHost = config["Smtp:Host"];
             if (!string.IsNullOrWhiteSpace(smtpHost))
             {
@@ -108,7 +109,6 @@ namespace ReactWithASP.Server
             }
             else
             {
-                // If no SMTP configured, use file-based sender in Development for safe testing
                 builder.Services.AddScoped<IEmailSenderService, FileEmailSender>();
             }
 
@@ -142,6 +142,46 @@ namespace ReactWithASP.Server
             app.MapFallbackToFile("index.html");
 
             app.Run();
+        }
+
+        private static void LoadEnvironmentFile()
+        {
+            var candidatePaths = new[]
+            {
+                Path.Combine(Directory.GetCurrentDirectory(), "ReactApp1.Server", ".env"),
+                Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env"),
+            };
+
+            foreach (var path in candidatePaths)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (!File.Exists(fullPath))
+                {
+                    continue;
+                }
+
+                foreach (var rawLine in File.ReadAllLines(fullPath))
+                {
+                    var line = rawLine.Trim();
+                    if (line.Length == 0 || line.StartsWith('#'))
+                    {
+                        continue;
+                    }
+
+                    var equalsIndex = line.IndexOf('=');
+                    if (equalsIndex <= 0)
+                    {
+                        continue;
+                    }
+
+                    var key = line[..equalsIndex].Trim();
+                    var value = line[(equalsIndex + 1)..].Trim().Trim('"');
+                    Environment.SetEnvironmentVariable(key, value);
+                }
+
+                break;
+            }
         }
     }
 }

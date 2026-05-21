@@ -50,10 +50,39 @@ public sealed class SmtpEmailSender(IOptions<SmtpEmailOptions> options, ILogger<
         try
         {
             await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent to {Email}", toEmail);
+            _logger.LogInformation("Email sent to {Email} via {Host}:{Port}", toEmail, _options.Host, _options.Port);
         }
         catch (SmtpException ex)
         {
+            _logger.LogWarning(ex, "SMTP send failed on {Host}:{Port} — attempting implicit SSL on port 465: {Message}", _options.Host, _options.Port, ex.Message);
+
+            // Try implicit SSL on port 465 as a fallback (some servers expect SSL on connect)
+            if (_options.Port != 465)
+            {
+                try
+                {
+                    using var client465 = new SmtpClient(_options.Host, 465)
+                    {
+                        EnableSsl = true,
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        Timeout = 10000,
+                        UseDefaultCredentials = false,
+                        Credentials = string.IsNullOrWhiteSpace(_options.UserName)
+                            ? CredentialCache.DefaultNetworkCredentials
+                            : new NetworkCredential(_options.UserName, _options.Password)
+                    };
+
+                    await client465.SendMailAsync(message);
+                    _logger.LogInformation("Email sent to {Email} via {Host}:465 (implicit SSL)", toEmail, _options.Host);
+                    return;
+                }
+                catch (SmtpException ex2)
+                {
+                    _logger.LogError(ex2, "Implicit-SSL SMTP send also failed for {Email}: {Message}", toEmail, ex2.Message);
+                    throw;
+                }
+            }
+
             _logger.LogError(ex, "SMTP send failed for {Email}: {Message}", toEmail, ex.Message);
             throw;
         }

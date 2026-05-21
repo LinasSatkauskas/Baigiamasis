@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Hosting;
 using ReactApp1.Server.Services.Email;
 using System.Text;
 using System.Net;
+using System.Net.Mail;
 
 namespace ReactApp1.Server.Controllers
 {
@@ -22,19 +24,22 @@ namespace ReactApp1.Server.Controllers
         private readonly IOptionsMonitor<CookieAuthenticationOptions> _cookieOptions;
         private readonly IEmailSenderService _emailSender;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _environment;
 
         public AccountController(
             SignInManager<IdentityUser> signInManager,
             UserManager<IdentityUser> userManager,
             IOptionsMonitor<CookieAuthenticationOptions> cookieOptions,
             IEmailSenderService emailSender,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IWebHostEnvironment environment)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _cookieOptions = cookieOptions;
             _emailSender = emailSender;
             _configuration = configuration;
+            _environment = environment;
         }
 
         public sealed class RegisterRequest { public string Email { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
@@ -130,12 +135,49 @@ namespace ReactApp1.Server.Controllers
             {
                 await _emailSender.SendAsync(email, "Slaptažodžio atstatymas", htmlBody, textBody);
             }
+            catch (SmtpException ex)
+            {
+                // If in development, fallback to FileEmailSender so dev testers still receive the link
+                if (_environment.IsDevelopment())
+                {
+                    try
+                    {
+                        // Resolve a FileEmailSender and write the email locally
+                        var fileSender = HttpContext.RequestServices.GetService(typeof(IEmailSenderService)) as IEmailSenderService;
+                        if (fileSender is not null)
+                        {
+                            await fileSender.SendAsync(email, "Slaptažodžio atstatymas (fallback)", htmlBody, textBody);
+                        }
+                    }
+                    catch
+                    {
+                        // ignore fallback failures
+                    }
+
+                    return Ok(new { message = "Vystymo režime: atstatymo nuoroda sugeneruota ir įrašyta į DevEmails (SMTP klaida).", detail = ex.Message });
+                }
+
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    message = "Nepavyko išsiųsti el. laiško per SMTP.",
+                    detail = ex.Message
+                });
+            }
             catch (InvalidOperationException ex)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                 {
                     message = "El. pašto siuntimas nėra sukonfigūruotas.",
                     detail = ex.Message
+                });
+            }
+
+            if (_environment.IsDevelopment())
+            {
+                return Ok(new
+                {
+                    message = "Vystymo režime atstatymo nuoroda sugeneruota.",
+                    resetUrl
                 });
             }
 
