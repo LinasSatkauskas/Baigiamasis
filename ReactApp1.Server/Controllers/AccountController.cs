@@ -25,6 +25,7 @@ namespace ReactApp1.Server.Controllers
         private readonly IEmailSenderService _emailSender;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
+        private readonly ReactApp1.Server.Data.AppDbContext _db;
 
         public AccountController(
             SignInManager<IdentityUser> signInManager,
@@ -32,7 +33,8 @@ namespace ReactApp1.Server.Controllers
             IOptionsMonitor<CookieAuthenticationOptions> cookieOptions,
             IEmailSenderService emailSender,
             IConfiguration configuration,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            ReactApp1.Server.Data.AppDbContext db)
         {
             _signInManager = signInManager;
             _userManager = userManager;
@@ -40,6 +42,7 @@ namespace ReactApp1.Server.Controllers
             _emailSender = emailSender;
             _configuration = configuration;
             _environment = environment;
+            _db = db ?? throw new ArgumentNullException(nameof(db));
         }
 
         public sealed class RegisterRequest { public string Email { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
@@ -322,10 +325,31 @@ namespace ReactApp1.Server.Controllers
                 return NotFound(new { title = "Not found", detail = "Vartotojas nerastas." });
             }
 
+            var email = user.Email?.Trim();
+
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors);
+            }
+
+            // Remove related data for this deleted user: comments by their email.
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    var key = email.Trim().ToLowerInvariant();
+                    var comments = await _db.Comments.Where(c => c.Email.ToLower() == key).ToListAsync();
+                    if (comments.Count > 0)
+                    {
+                        _db.Comments.RemoveRange(comments);
+                        await _db.SaveChangesAsync();
+                    }
+                }
+            }
+            catch
+            {
+                // Swallow errors deleting related data to avoid failing the whole operation.
             }
 
             return Ok(new { message = "User deleted" });
