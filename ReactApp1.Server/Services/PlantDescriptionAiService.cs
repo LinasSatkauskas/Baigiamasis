@@ -80,14 +80,14 @@ public class PlantDescriptionAiService(
             }
 
             // If the AI returned an excessively short or truncated result (e.g. 2-3 words),
-            // prefer the first full sentence from Wikipedia to ensure a useful description.
-            if (IsTooShortOrNotSentence(clean))
+            // prefer the first two sentences from Wikipedia to ensure a useful description.
+                if (IsTooShortOrNotSentence(clean))
             {
                 logger.LogInformation("Generated description was too short; attempting Wikipedia fallback for {PlantName}.", plantName);
                 var wiki = await TryGenerateWithWikipediaAsync(client, plantName);
                 if (!string.IsNullOrWhiteSpace(wiki))
                 {
-                    var first = ExtractFirstSentences(wiki, 1);
+                        var first = ExtractFirstSentences(wiki, 2);
                         if (!string.IsNullOrWhiteSpace(first))
                         {
                             clean = Cleanup(first);
@@ -130,6 +130,13 @@ public class PlantDescriptionAiService(
                 var summary = await TryFetchWikipediaSummaryAsync(client, domain, query);
                 if (!string.IsNullOrWhiteSpace(summary))
                 {
+                    // Prefer the first two sentences from the Wikipedia extract to keep descriptions concise
+                    var firstTwo = ExtractFirstSentences(summary, 2);
+                    if (!string.IsNullOrWhiteSpace(firstTwo))
+                    {
+                        return firstTwo;
+                    }
+
                     return summary;
                 }
             }
