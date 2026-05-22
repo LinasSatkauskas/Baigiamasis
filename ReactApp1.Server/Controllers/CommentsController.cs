@@ -86,13 +86,15 @@ public class CommentsController(
             return NotFound();
         }
 
-        var (currentUser, isAdmin, _) = await GetCurrentUserInfoAsync();
+        var (currentUser, _, _) = await GetCurrentUserInfoAsync();
         if (currentUser is null)
         {
             return Unauthorized();
         }
 
-        if (!isAdmin && !string.Equals(entity.Email, currentUser.Email ?? currentUser.UserName, StringComparison.OrdinalIgnoreCase))
+        // Only the comment owner may edit their comment. Admins may NOT edit others' comments,
+        // but they retain the ability to delete comments via the Delete endpoint.
+        if (!string.Equals(entity.Email, currentUser.Email ?? currentUser.UserName, StringComparison.OrdinalIgnoreCase))
         {
             return Forbid();
         }

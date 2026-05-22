@@ -26,8 +26,24 @@ export function CommentsSection({ plantId, plantName }: Props) {
   const canPost = canView
   const currentEmail = user?.email ?? ""
   const currentEmailLower = currentEmail.toLowerCase()
+  // Only the comment owner may edit a comment in the UI.
+  // Admins will not be offered an "edit" action for other users' comments.
   const canEditComment = (comment: IComment) =>
-    isAdmin() || comment.email.toLowerCase() === currentEmailLower
+    comment.email.toLowerCase() === currentEmailLower
+
+  const adminDeleteComment = async (id?: number) => {
+    if (!id) return
+    setError(undefined)
+    setSubmitting(true)
+    try {
+      await deleteApi(`comments/${id}`, {})
+      await load()
+    } catch (err: any) {
+      setError(err?.message || "Nepavyko ištrinti komentaro.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const formatCommentTime = (value?: string | null) => {
     if (!value) return ""
@@ -236,14 +252,22 @@ export function CommentsSection({ plantId, plantName }: Props) {
                       </div>
                     </td>
                     <td className="w-28 px-4 py-3 align-top text-right">
-                      {canEditComment(c) && (
+                      {c.email?.toLowerCase() === currentEmailLower ? (
                         <button
                           className="text-emerald-700 hover:text-emerald-900 font-medium text-sm"
                           onClick={() => setEdit(c)}
                         >
                           Redaguoti
                         </button>
-                      )}
+                      ) : isAdmin() ? (
+                        <button
+                          className="text-red-600 hover:text-red-800 font-medium text-sm"
+                          onClick={() => adminDeleteComment(c.id)}
+                          disabled={submitting}
+                        >
+                          Ištrinti
+                        </button>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
