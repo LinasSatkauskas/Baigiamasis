@@ -14,7 +14,7 @@ namespace ReactWithASP.Server
     {
         public static void Main(string[] args)
         {
-            LoadEnvironmentFile();
+            var environmentValues = LoadEnvironmentFile();
 
             var builder = WebApplication.CreateBuilder(args);
 
@@ -35,10 +35,10 @@ namespace ReactWithASP.Server
 
             // Load configuration from appsettings
             var config = builder.Configuration;
-            var mysqlHost = Environment.GetEnvironmentVariable("MySQL_Host") ?? Environment.GetEnvironmentVariable("MySQL:Host") ?? config["MySQL:Host"] ?? "localhost";
-            var mysqlDb = Environment.GetEnvironmentVariable("MySQL_Db") ?? Environment.GetEnvironmentVariable("MySQL:Db") ?? config["MySQL:Db"];
-            var mysqlUser = Environment.GetEnvironmentVariable("MySQL_User") ?? Environment.GetEnvironmentVariable("MySQL:User") ?? config["MySQL:User"];
-            var mysqlPassword = Environment.GetEnvironmentVariable("MySQL_Password") ?? Environment.GetEnvironmentVariable("MySQL:Password") ?? config["MySQL:Password"];
+            var mysqlHost = GetSetting(environmentValues, "MySQL_Host", "MySQL:Host") ?? config["MySQL:Host"] ?? "localhost";
+            var mysqlDb = GetSetting(environmentValues, "MySQL_Db", "MySQL:Db") ?? config["MySQL:Db"];
+            var mysqlUser = GetSetting(environmentValues, "MySQL_User", "MySQL:User") ?? config["MySQL:User"];
+            var mysqlPassword = GetSetting(environmentValues, "MySQL_Password", "MySQL:Password") ?? config["MySQL:Password"];
 
             var mysqlConn = $"server={mysqlHost};port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
 
@@ -131,11 +131,16 @@ namespace ReactWithASP.Server
 
             var app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
+            try
             {
+                using var scope = app.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Database.Migrate();
                 IdentitySeeder.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogWarning(ex, "Database startup migration or seeding skipped because MySQL is unavailable. The app will still start, but database-backed endpoints may fail until the database is reachable.");
             }
 
             app.UseDefaultFiles();
@@ -162,8 +167,28 @@ namespace ReactWithASP.Server
             app.Run();
         }
 
-        private static void LoadEnvironmentFile()
+        private static string? GetSetting(IReadOnlyDictionary<string, string> environmentValues, params string[] keys)
         {
+            foreach (var key in keys)
+            {
+                if (environmentValues.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+
+                var aliasKey = key.Replace(':', '_');
+                if (environmentValues.TryGetValue(aliasKey, out value) && !string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
+        private static Dictionary<string, string> LoadEnvironmentFile()
+        {
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var candidatePaths = new[]
             {
                 Path.Combine(Directory.GetCurrentDirectory(), "ReactApp1.Server", ".env"),
@@ -195,11 +220,21 @@ namespace ReactWithASP.Server
 
                     var key = line[..equalsIndex].Trim();
                     var value = line[(equalsIndex + 1)..].Trim().Trim('"');
+                    values[key] = value;
                     Environment.SetEnvironmentVariable(key, value);
+
+                    var aliasKey = key.Replace(':', '_');
+                    if (!string.Equals(aliasKey, key, StringComparison.Ordinal))
+                    {
+                        values[aliasKey] = value;
+                        Environment.SetEnvironmentVariable(aliasKey, value);
+                    }
                 }
 
                 break;
             }
+
+            return values;
         }
     }
 }
