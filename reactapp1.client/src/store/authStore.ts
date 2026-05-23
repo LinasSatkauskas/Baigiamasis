@@ -71,18 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         rememberMe,
       })
       if (!res.ok) {
-        const friendlyLoginMessage =
-          res.status === 401
-            ? "You've typed in the wrong password or email."
-            : undefined
-
-        set({
-          error:
-            friendlyLoginMessage ||
-            extractIdentityErrors(res.bodyJson) ||
-            res.bodyText ||
-            `Login failed (${res.status})`,
-        })
+        set({ error: "Prisijungti nepavyko" })
         return false
       }
       await get().loadMe()

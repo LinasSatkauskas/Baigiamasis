@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.Models.DTOs;
 using ReactApp1.Server.Services;
@@ -10,6 +11,7 @@ namespace ReactApp1.Server.Controllers;
 
 [ApiController]
 [Route("api/plantchat")]
+[Authorize]
 public class PlantChatController(
     IConfiguration configuration,
     IHttpClientFactory httpClientFactory,

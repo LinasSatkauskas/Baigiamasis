@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { IPlant } from "../../../interfaces/IPlant"
 import { postApiRaw } from "../../../api"
+import { useAuthStore } from "../../../store/authStore"
 import { formStyle } from "../../../styles/formStyle"
 
 type Props = {
@@ -157,6 +158,7 @@ const buildReply = (
 }
 
 export function PlantChatbot({ plants, visiblePlants }: Props) {
+  const user = useAuthStore((state) => state.user)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -199,6 +201,10 @@ export function PlantChatbot({ plants, visiblePlants }: Props) {
 
     return prompts.slice(0, 3)
   }, [plants, visiblePlants])
+
+  if (!user) {
+    return null
+  }
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim()
@@ -301,7 +307,7 @@ export function PlantChatbot({ plants, visiblePlants }: Props) {
       {open && (
         <section
           id="plants-chat-panel"
-          className="fixed bottom-3 right-3 z-40 flex h-[34rem] w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-2xl sm:bottom-4 sm:right-4 sm:w-[24rem]"
+          className="fixed bottom-3 right-3 z-40 flex h-136 w-88 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-2xl sm:bottom-4 sm:right-4 sm:w-[24rem]"
           role="dialog"
           aria-label="Augalų pokalbių asistentas"
         >

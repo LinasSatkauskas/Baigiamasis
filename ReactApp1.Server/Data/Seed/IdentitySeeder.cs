@@ -35,8 +35,8 @@ namespace ReactApp1.Server.Data.Seed
             {
                 if (env.IsDevelopment())
                 {
-                    adminEmail = adminEmail ?? "admin@local";
-                    adminPassword = adminPassword ?? "Passw0rd!";
+                    adminEmail = adminEmail ?? "admin@gmail.com";
+                    adminPassword = adminPassword ?? "Admin123.";
                 }
                 else
                 {

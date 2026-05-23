@@ -84,14 +84,14 @@ namespace ReactApp1.Server.Controllers
             var email = request.Email?.Trim();
             if (string.IsNullOrWhiteSpace(email))
             {
-                return Unauthorized(new { message = "You've typed in the wrong password or email." });
+                return Unauthorized(new { message = "Prisijungti nepavyko" });
             }
 
             var user = await _userManager.FindByEmailAsync(email);
-            if (user is null) return Unauthorized(new { message = "You've typed in the wrong password or email." });
+            if (user is null) return Unauthorized(new { message = "Prisijungti nepavyko" });
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
-            if (!result.Succeeded) return Unauthorized(new { message = "You've typed in the wrong password or email." });
+            if (!result.Succeeded) return Unauthorized(new { message = "Prisijungti nepavyko" });
 
             await _signInManager.SignInAsync(user, isPersistent: request.RememberMe);
             return Ok(new { message = "Logged in" });
