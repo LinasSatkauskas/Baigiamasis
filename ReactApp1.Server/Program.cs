@@ -173,13 +173,13 @@ namespace ReactWithASP.Server
             {
                 if (environmentValues.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
                 {
-                    return value;
+                    return value.Trim().Trim('"', '\'');
                 }
 
                 var aliasKey = key.Replace(':', '_');
                 if (environmentValues.TryGetValue(aliasKey, out value) && !string.IsNullOrWhiteSpace(value))
                 {
-                    return value;
+                    return value.Trim().Trim('"', '\'');
                 }
             }
 
@@ -209,13 +209,13 @@ namespace ReactWithASP.Server
                 return ConvertDatabaseUrlToMySqlConnectionString(databaseUrl);
             }
 
-            var mysqlHost = GetSetting(environmentValues, "MYSQLHOST", "MYSQL_HOST", "MySQL_Host", "MySQL:Host")
+            var mysqlHost = GetSetting(environmentValues, "MYSQLHOST", "MYSQL_HOST", "MySQL_Host", "MySQL:Host", "DB_HOST", "DB_HOSTNAME", "DB:Host")
                 ?? config["MySQL:Host"]
                 ?? "localhost";
-            var mysqlPort = GetSetting(environmentValues, "MYSQLPORT", "MYSQL_PORT", "MySQL_Port", "MySQL:Port") ?? config["MySQL:Port"] ?? "3306";
-            var mysqlDb = GetSetting(environmentValues, "MYSQLDATABASE", "MYSQL_DATABASE", "MySQL_Db", "MySQL:Db") ?? config["MySQL:Db"];
-            var mysqlUser = GetSetting(environmentValues, "MYSQLUSER", "MYSQL_USER", "MySQL_User", "MySQL:User") ?? config["MySQL:User"];
-            var mysqlPassword = GetSetting(environmentValues, "MYSQLPASSWORD", "MYSQL_PASSWORD", "MySQL_Password", "MySQL:Password") ?? config["MySQL:Password"];
+            var mysqlPort = GetSetting(environmentValues, "MYSQLPORT", "MYSQL_PORT", "MySQL_Port", "MySQL:Port", "DB_PORT", "DB:Port") ?? config["MySQL:Port"] ?? "3306";
+            var mysqlDb = GetSetting(environmentValues, "MYSQLDATABASE", "MYSQL_DATABASE", "MySQL_Db", "MySQL:Db", "DB_DATABASE", "DB_NAME", "DB:Database") ?? config["MySQL:Db"];
+            var mysqlUser = GetSetting(environmentValues, "MYSQLUSER", "MYSQL_USER", "MySQL_User", "MySQL:User", "DB_USERNAME", "DB_USER", "DB:User") ?? config["MySQL:User"];
+            var mysqlPassword = GetSetting(environmentValues, "MYSQLPASSWORD", "MYSQL_PASSWORD", "MySQL_Password", "MySQL:Password", "DB_PASSWORD", "DB:Password") ?? config["MySQL:Password"];
 
             if (string.IsNullOrWhiteSpace(mysqlHost) || string.IsNullOrWhiteSpace(mysqlDb) || string.IsNullOrWhiteSpace(mysqlUser) || string.IsNullOrWhiteSpace(mysqlPassword))
             {
