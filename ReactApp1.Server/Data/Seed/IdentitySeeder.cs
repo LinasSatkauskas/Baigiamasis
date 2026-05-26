@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using ReactApp1.Server.Data;
 
 namespace ReactApp1.Server.Data.Seed
@@ -11,12 +9,9 @@ namespace ReactApp1.Server.Data.Seed
     {
         public static async Task SeedAsync(IServiceProvider services)
         {
-            var db = services.GetRequiredService<AppDbContext>();
-
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
             var config = services.GetRequiredService<IConfiguration>();
-            var env = services.GetRequiredService<IHostEnvironment>();
 
             // Ensure required roles
             string[] roles = new[] { "Admin", "User" };
@@ -26,24 +21,11 @@ namespace ReactApp1.Server.Data.Seed
                     await roleManager.CreateAsync(new IdentityRole(role));
             }
 
-            // Read admin credentials from configuration
+            // Use configured credentials when present; otherwise fall back to a default admin so first deploy is usable.
             var adminEmail = config["Admin:Email"];
             var adminPassword = config["Admin:Password"];
-
-            // Provide a Development fallback if not configured
-            if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
-            {
-                if (env.IsDevelopment())
-                {
-                    adminEmail = adminEmail ?? "admin@gmail.com";
-                    adminPassword = adminPassword ?? "Admin123.";
-                }
-                else
-                {
-                    // In non-dev, do not auto-create an admin without explicit credentials
-                    return;
-                }
-            }
+            adminEmail = string.IsNullOrWhiteSpace(adminEmail) ? "admin@gmail.com" : adminEmail;
+            adminPassword = string.IsNullOrWhiteSpace(adminPassword) ? "Admin123." : adminPassword;
 
             // Create or update admin user
             var user = await userManager.FindByEmailAsync(adminEmail!);
