@@ -10,6 +10,10 @@ RUN npm run build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS server-build
 WORKDIR /src
 
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends nodejs npm \
+	&& rm -rf /var/lib/apt/lists/*
+
 COPY ReactApp1.Server/ReactApp1.Server.csproj ReactApp1.Server/
 COPY reactapp1.client/reactapp1.client.esproj reactapp1.client/
 RUN dotnet restore ReactApp1.Server/ReactApp1.Server.csproj
