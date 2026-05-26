@@ -209,7 +209,9 @@ namespace ReactWithASP.Server
                 return ConvertDatabaseUrlToMySqlConnectionString(databaseUrl);
             }
 
-            var mysqlHost = GetSetting(environmentValues, "MYSQLHOST", "MYSQL_HOST", "MySQL_Host", "MySQL:Host") ?? config["MySQL:Host"];
+            var mysqlHost = GetSetting(environmentValues, "MYSQLHOST", "MYSQL_HOST", "MySQL_Host", "MySQL:Host")
+                ?? config["MySQL:Host"]
+                ?? "localhost";
             var mysqlPort = GetSetting(environmentValues, "MYSQLPORT", "MYSQL_PORT", "MySQL_Port", "MySQL:Port") ?? config["MySQL:Port"] ?? "3306";
             var mysqlDb = GetSetting(environmentValues, "MYSQLDATABASE", "MYSQL_DATABASE", "MySQL_Db", "MySQL:Db") ?? config["MySQL:Db"];
             var mysqlUser = GetSetting(environmentValues, "MYSQLUSER", "MYSQL_USER", "MySQL_User", "MySQL:User") ?? config["MySQL:User"];
