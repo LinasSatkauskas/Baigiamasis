@@ -40,12 +40,7 @@ namespace ReactWithASP.Server
 
             // Load configuration from appsettings
             var config = builder.Configuration;
-            var mysqlHost = GetSetting(environmentValues, "MySQL_Host", "MySQL:Host") ?? config["MySQL:Host"] ?? "localhost";
-            var mysqlDb = GetSetting(environmentValues, "MySQL_Db", "MySQL:Db") ?? config["MySQL:Db"];
-            var mysqlUser = GetSetting(environmentValues, "MySQL_User", "MySQL:User") ?? config["MySQL:User"];
-            var mysqlPassword = GetSetting(environmentValues, "MySQL_Password", "MySQL:Password") ?? config["MySQL:Password"];
-
-            var mysqlConn = $"server={mysqlHost};port=3306;user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+            var mysqlConn = ResolveMySqlConnectionString(environmentValues, config);
 
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(mysqlConn, new MySqlServerVersion(new Version(8, 0, 0)))
@@ -189,6 +184,59 @@ namespace ReactWithASP.Server
             }
 
             return null;
+        }
+
+        private static string ResolveMySqlConnectionString(IReadOnlyDictionary<string, string> environmentValues, IConfiguration config)
+        {
+            var configuredConnectionString = GetSetting(
+                environmentValues,
+                "ConnectionStrings__DefaultConnection",
+                "ConnectionStrings:DefaultConnection",
+                "MYSQLCONNSTR_DefaultConnection",
+                "MySQL_ConnectionString",
+                "MySQL:ConnectionString")
+                ?? config.GetConnectionString("DefaultConnection")
+                ?? config["MySQL:ConnectionString"];
+
+            if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+            {
+                return configuredConnectionString;
+            }
+
+            var databaseUrl = GetSetting(environmentValues, "DATABASE_URL", "MySQL_DatabaseUrl", "MySQL:DatabaseUrl");
+            if (!string.IsNullOrWhiteSpace(databaseUrl))
+            {
+                return ConvertDatabaseUrlToMySqlConnectionString(databaseUrl);
+            }
+
+            var mysqlHost = GetSetting(environmentValues, "MYSQLHOST", "MYSQL_HOST", "MySQL_Host", "MySQL:Host") ?? config["MySQL:Host"];
+            var mysqlPort = GetSetting(environmentValues, "MYSQLPORT", "MYSQL_PORT", "MySQL_Port", "MySQL:Port") ?? config["MySQL:Port"] ?? "3306";
+            var mysqlDb = GetSetting(environmentValues, "MYSQLDATABASE", "MYSQL_DATABASE", "MySQL_Db", "MySQL:Db") ?? config["MySQL:Db"];
+            var mysqlUser = GetSetting(environmentValues, "MYSQLUSER", "MYSQL_USER", "MySQL_User", "MySQL:User") ?? config["MySQL:User"];
+            var mysqlPassword = GetSetting(environmentValues, "MYSQLPASSWORD", "MYSQL_PASSWORD", "MySQL_Password", "MySQL:Password") ?? config["MySQL:Password"];
+
+            if (string.IsNullOrWhiteSpace(mysqlHost) || string.IsNullOrWhiteSpace(mysqlDb) || string.IsNullOrWhiteSpace(mysqlUser) || string.IsNullOrWhiteSpace(mysqlPassword))
+            {
+                throw new InvalidOperationException("MySQL connection settings are missing. Set DATABASE_URL or MYSQLHOST/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD (or MySQL:* settings).");
+            }
+
+            return $"server={mysqlHost};port={mysqlPort};user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+        }
+
+        private static string ConvertDatabaseUrlToMySqlConnectionString(string databaseUrl)
+        {
+            if (!Uri.TryCreate(databaseUrl, UriKind.Absolute, out var uri))
+            {
+                return databaseUrl;
+            }
+
+            var userInfo = uri.UserInfo.Split(':', 2);
+            var user = Uri.UnescapeDataString(userInfo[0]);
+            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+            var database = uri.AbsolutePath.Trim('/');
+            var port = uri.IsDefaultPort ? 3306 : uri.Port;
+
+            return $"server={uri.Host};port={port};user={user};password={password};database={database};TreatTinyAsBoolean=false";
         }
 
         private static Dictionary<string, string> LoadEnvironmentFile()
