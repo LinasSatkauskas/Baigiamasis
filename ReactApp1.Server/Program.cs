@@ -222,7 +222,7 @@ namespace ReactWithASP.Server
                 throw new InvalidOperationException("MySQL connection settings are missing. Set DATABASE_URL or MYSQLHOST/MYSQLDATABASE/MYSQLUSER/MYSQLPASSWORD (or MySQL:* settings).");
             }
 
-            return $"server={mysqlHost};port={mysqlPort};user={mysqlUser};password={mysqlPassword};database={mysqlDb};TreatTinyAsBoolean=false";
+            return BuildMySqlConnectionString(mysqlHost, mysqlPort, mysqlUser, mysqlPassword, mysqlDb);
         }
 
         private static string ConvertDatabaseUrlToMySqlConnectionString(string databaseUrl)
@@ -238,7 +238,20 @@ namespace ReactWithASP.Server
             var database = uri.AbsolutePath.Trim('/');
             var port = uri.IsDefaultPort ? 3306 : uri.Port;
 
-            return $"server={uri.Host};port={port};user={user};password={password};database={database};TreatTinyAsBoolean=false";
+            return BuildMySqlConnectionString(uri.Host, port.ToString(), user, password, database);
+        }
+
+        private static string BuildMySqlConnectionString(string host, string port, string user, string password, string database)
+        {
+            var baseConnectionString = $"server={host};port={port};user={user};password={password};database={database};TreatTinyAsBoolean=false";
+
+            if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase))
+            {
+                return baseConnectionString;
+            }
+
+            return baseConnectionString + ";SslMode=Required";
         }
 
         private static Dictionary<string, string> LoadEnvironmentValues()
