@@ -10,19 +10,8 @@ namespace ReactApp1.Server.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ImageUrl",
-                table: "Plants",
-                type: "longtext",
-                nullable: true)
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.AddColumn<string>(
-                name: "ImageUrl",
-                table: "Pests",
-                type: "longtext",
-                nullable: true)
-                .Annotation("MySql:CharSet", "utf8mb4");
+            migrationBuilder.Sql(@"ALTER TABLE `Plants` ADD COLUMN IF NOT EXISTS `ImageUrl` longtext CHARACTER SET utf8mb4 NULL;");
+            migrationBuilder.Sql(@"ALTER TABLE `Pests` ADD COLUMN IF NOT EXISTS `ImageUrl` longtext CHARACTER SET utf8mb4 NULL;");
         }
 
         /// <inheritdoc />
