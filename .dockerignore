@@ -1,0 +1,11 @@
+.git
+.vs
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.vite
+**/*.user
+**/*.suo
+**/*.log
+Dockerfile
