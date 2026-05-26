@@ -14,7 +14,7 @@ namespace ReactWithASP.Server
     {
         public static void Main(string[] args)
         {
-            var environmentValues = LoadEnvironmentFile();
+            var environmentValues = LoadEnvironmentValues();
             var renderPortSetting = Environment.GetEnvironmentVariable("PORT");
             var isHostedBehindProxy = int.TryParse(renderPortSetting, out var renderPort);
 
@@ -241,9 +241,15 @@ namespace ReactWithASP.Server
             return $"server={uri.Host};port={port};user={user};password={password};database={database};TreatTinyAsBoolean=false";
         }
 
-        private static Dictionary<string, string> LoadEnvironmentFile()
+        private static Dictionary<string, string> LoadEnvironmentValues()
         {
-            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var values = Environment.GetEnvironmentVariables()
+                .Cast<System.Collections.DictionaryEntry>()
+                .ToDictionary(
+                    entry => entry.Key.ToString() ?? string.Empty,
+                    entry => entry.Value?.ToString() ?? string.Empty,
+                    StringComparer.OrdinalIgnoreCase);
+
             var candidatePaths = new[]
             {
                 Path.Combine(Directory.GetCurrentDirectory(), "ReactApp1.Server", ".env"),
@@ -276,13 +282,11 @@ namespace ReactWithASP.Server
                     var key = line[..equalsIndex].Trim();
                     var value = line[(equalsIndex + 1)..].Trim().Trim('"');
                     values[key] = value;
-                    Environment.SetEnvironmentVariable(key, value);
 
                     var aliasKey = key.Replace(':', '_');
                     if (!string.Equals(aliasKey, key, StringComparison.Ordinal))
                     {
                         values[aliasKey] = value;
-                        Environment.SetEnvironmentVariable(aliasKey, value);
                     }
                 }
 
