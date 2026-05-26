@@ -24,8 +24,13 @@ public class PlantDescriptionAiService(
             return cached;
         }
 
-        var apiKey = configuration["Gemini:ApiKey"];
-        var configuredModel = configuration["Gemini:Model"] ?? "gemini-2.0-flash";
+        var apiKey = configuration["Gemini:ApiKey"]
+            ?? Environment.GetEnvironmentVariable("Gemini_ApiKey")
+            ?? Environment.GetEnvironmentVariable("Gemini__ApiKey");
+        var configuredModel = configuration["Gemini:Model"]
+            ?? Environment.GetEnvironmentVariable("Gemini_Model")
+            ?? Environment.GetEnvironmentVariable("Gemini__Model")
+            ?? "gemini-2.0-flash";
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             logger.LogWarning("Gemini API key is missing. Cannot generate description for plant {PlantName}.", plantName);

@@ -30,13 +30,17 @@ public class PlantChatController(
             return BadRequest("Message is required.");
         }
 
-        var apiKey = configuration["Gemini:ApiKey"];
+        var apiKey = configuration["Gemini:ApiKey"]
+            ?? Environment.GetEnvironmentVariable("Gemini_ApiKey")
+            ?? Environment.GetEnvironmentVariable("Gemini__ApiKey");
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Gemini API key is not configured." });
         }
 
-        var configuredModel = configuration["Gemini:Model"];
+        var configuredModel = configuration["Gemini:Model"]
+            ?? Environment.GetEnvironmentVariable("Gemini_Model")
+            ?? Environment.GetEnvironmentVariable("Gemini__Model");
         var modelResult = await GetCandidateModelsAsync(apiKey, configuredModel);
         var candidateModels = modelResult.Models;
         var effectiveRequest = await EnrichMissingPlantDescriptionsAsync(request);
